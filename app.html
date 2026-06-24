@@ -173,6 +173,11 @@ function startGame(){
  var bs=document.getElementById('boardStyle').value;
  var ss=document.getElementById('stoneStyle').value;
  var co=document.getElementById('coordStyle').value==='1';
+
+ // remove old stones from board BEFORE resetting stoneObjects
+ if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
+ stoneObjects=[];
+
  initGame(sz,lv);
 
  var box=document.getElementById('boardBox');
@@ -182,9 +187,6 @@ function startGame(){
   wood:{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531'},
   bamboo:{bg:'#D4C878',line:'#8B7D4A',star:'#5C4A20',coord:'#5C4A20'}
  }[bs]||{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531'};
-
- if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
- stoneObjects=[];
 
  if(!board){
   board=new WGo.SVGBoard(box,{size:size,width:maxW,coordinates:co});
