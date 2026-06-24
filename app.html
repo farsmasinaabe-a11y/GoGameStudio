@@ -175,7 +175,12 @@ function startGame(){
  initGame(sz,lv);
 
  var box=document.getElementById('boardBox');
- box.innerHTML='';
+ var parent=box.parentNode;
+ var newBox=document.createElement('div');
+ newBox.id='boardBox';
+ newBox.style.display='inline-block';
+ parent.replaceChild(newBox,box);
+ box=newBox;
  var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.6,600);
 
  var styles={
@@ -218,7 +223,6 @@ function startGame(){
  document.getElementById('info').style.display='';
  document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
- sgfVisible=false;document.getElementById('sgfBar').style.display='none';
  updateInfo();
 }
 
@@ -325,16 +329,14 @@ function act(a){
   initGame(size,aiLevel);
   refreshBoard();updateInfo();
  }else if(a==='end'){endGame();return}
- else if(a==='closeGame'){
-  var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
-  if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
-  var box=document.getElementById('boardBox');
-  while(box.firstChild)box.removeChild(box.firstChild);
-  board=null;game=null;stoneObjects=[];
-  document.getElementById('result').style.display='none';
-  document.getElementById('boardBox').style.display='';
-  document.getElementById('btns').style.display='';
-  document.getElementById('info').style.display='';
+  else if(a==='closeGame'){
+   var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
+   if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
+   board=null;game=null;stoneObjects=[];
+   document.getElementById('result').style.display='none';
+   document.getElementById('boardBox').style.display='';
+   document.getElementById('btns').style.display='';
+   document.getElementById('info').style.display='';
   showScreen('menu-go');
   return;
  }
