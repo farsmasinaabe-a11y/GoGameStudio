@@ -53,6 +53,21 @@ button:active{background:#444}
   <option value="13">13&#xD7;13</option>
   <option value="19">19&#xD7;19</option>
  </select>
+ <label>Стиль доски</label>
+ <select id="boardStyle">
+  <option value="wood" selected>Дерево</option>
+  <option value="bamboo">Бамбук</option>
+ </select>
+ <label>Стиль камней</label>
+ <select id="stoneStyle">
+  <option value="glass" selected>Стеклянные</option>
+  <option value="flat">Плоские</option>
+ </select>
+ <label>Подписи на доске</label>
+ <select id="coordStyle">
+  <option value="1" selected>Да</option>
+  <option value="0">Нет</option>
+ </select>
  <label>Режим игры</label>
  <div class="tabs" id="modeTabs">
   <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; ИИ</button>
@@ -155,20 +170,42 @@ function refreshBoard(){
 function startGame(){
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
+ var bs=document.getElementById('boardStyle').value;
+ var ss=document.getElementById('stoneStyle').value;
+ var co=document.getElementById('coordStyle').value==='1';
  initGame(sz,lv);
 
  var box=document.getElementById('boardBox');
  var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.6,600);
 
- // remove old stones
+ var styles={
+  wood:{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531'},
+  bamboo:{bg:'#D4C878',line:'#8B7D4A',star:'#5C4A20',coord:'#5C4A20'}
+ }[bs]||{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531'};
+
  if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
  stoneObjects=[];
 
  if(!board){
-  board=new WGo.SVGBoard(box,{size:size,width:maxW,coordinates:true});
+  board=new WGo.SVGBoard(box,{size:size,width:maxW,coordinates:co});
   setupBoardClick();
  }
  board.setSize(size);
+
+ // update theme
+ var t=board.config.theme;
+ t.backgroundColor=styles.bg;
+ if(t.grid){t.grid.linesColor=styles.line;t.grid.starColor=styles.star;}
+ if(t.coordinates){
+  t.coordinates.color=styles.coord;
+  t.coordinates.top=co;t.coordinates.left=co;
+  t.coordinates.right=false;t.coordinates.bottom=false;
+ }
+ if(ss==='flat'&&t.drawHandlers){
+  t.drawHandlers.B=new WGo.SVGStoneDrawHandler();
+  t.drawHandlers.W=new WGo.SVGStoneDrawHandler();
+ }
+ board.redraw();
  box.style.display='';
 
  showScreen('game');
