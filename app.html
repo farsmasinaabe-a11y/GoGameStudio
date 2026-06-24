@@ -72,6 +72,7 @@ button:active{background:#444}
  <div class="tabs" id="modeTabs">
   <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; ИИ</button>
   <button data-mode="practice" onclick="switchGoMode('practice')">&#x1F3AF; Практика</button>
+  <button data-mode="learn" onclick="switchGoMode('learn')">&#x1F4DA; Обучение</button>
  </div>
  <div id="aiSettings">
   <label>Сложность ИИ</label>
@@ -99,6 +100,7 @@ button:active{background:#444}
 
 <div id="game">
  <div id="info"></div>
+ <div id="learnList" style="display:none;margin-top:8px;text-align:left;max-width:400px"></div>
  <div id="practiceBar">
   <span style="font-size:13px;color:#aaa">Цвет:</span>
   <button id="pbBlack" class="btn-sm btn-active" onclick="setPracticeColor(1)">&#x26AB;</button>
@@ -181,6 +183,7 @@ function refreshBoard(){
 }
 
 function startGame(){
+ if(mode==='learn'){showLearnList();return;}
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
@@ -415,5 +418,52 @@ function setupBoardClick(){
   refreshBoard();updateInfo();
   if(mode==='ai')aiTimer=setTimeout(aiMove,200);
  });
+}
+
+function showLearnList(){
+ showScreen('game');
+ document.getElementById('boardBox').style.display='none';
+ document.getElementById('btns').style.display='none';
+ document.getElementById('info').style.display='none';
+ document.getElementById('practiceBar').style.display='none';
+ document.getElementById('result').style.display='none';
+
+ var lessons=[
+  {t:'Правила Го',d:'Цель — окружить больше территории, чем соперник. Камни ставятся на пересечения. Группа камней живёт, пока имеет дыхания.'},
+  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается с доски. Захваченные камни идут в копилку.'},
+  {t:'Правило Ko',d:'Запрещено повторять предыдущую позицию. Нельзя сразу же ответным ходом вернуть позицию, которая была до хода соперника.'},
+  {t:'Самоубийство',d:'Нельзя ставить камень в точку, где у него не будет дыханий, если только этот ход не захватывает камни соперника.'},
+  {t:'Глаза',d:'Группа с двумя глазами неуязвима — её невозможно захватить. Строй два глаза для защиты.'},
+  {t:'Подсчёт очков',d:'Очки = твоя территория + захваченные камни соперника. Белые получают коми как компенсацию за второй ход.'},
+  {t:'Seki (Сэки)',d:'Взаимная жизнь — позиция, где никто не может захватить другого без самоубийства. Очки в сэки не считаются.'}
+ ];
+
+ var html='<h3 style="margin-bottom:12px">\uD83D\uDCDA Обучение</h3>';
+ for(var i=0;i<lessons.length;i++){
+  html+='<div style="background:#1e1e3a;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="showLesson('+i+')">';
+  html+='<b>'+lessons[i].t+'</b>';
+  html+='<p style="font-size:12px;color:#888;margin-top:4px">'+lessons[i].d+'</p>';
+  html+='</div>';
+ }
+ document.getElementById('learnList').innerHTML=html;
+ document.getElementById('learnList').style.display='block';
+}
+
+var _lessonsFull=[
+ {t:'Правила Го',d:'Цель игры — окружить больше территории, чем соперник. Камни ставятся на пересечения линий. Группа камней живёт, пока имеет дыхания (свободные соседние точки). Игра заканчивается, когда оба игрока пасуют подряд.'},
+ {t:'Захват камней',d:'Если у группы камней не осталось дыханий — она снимается с доски. Это называется захватом. Захваченные камни идут в копилку и учитываются при финальном подсчёте очков.'},
+ {t:'Правило Ko',d:'Запрещено повторять предыдущую позицию. Нельзя сразу же ответным ходом вернуть позицию, которая была до хода соперника. Это предотвращает бесконечные циклы захвата.'},
+ {t:'Самоубийство',d:'Нельзя ставить камень в точку, где у него не будет дыханий, если только этот ход не захватывает камни соперника. Ход, снимающий вражеские камни и дающий дыхания — разрешён.'},
+ {t:'Глаза',d:'Группа с двумя глазами (отдельными внутренними пустотами) неуязвима — её невозможно захватить. Строй два глаза для защиты своих групп. Один глаз — группа под угрозой.'},
+ {t:'Подсчёт очков',d:'В конце игры: твои очки = твоя территория (пустые точки, окружённые только твоими камнями) + захваченные камни соперника. Белые получают коми 6.5 как компенсацию за второй ход.'},
+ {t:'Seki (Сэки)',d:'Взаимная жизнь — позиция, где группы обоих цветов не имеют двух глаз, но ни одна сторона не может захватить другую без самоубийства. Точки в сэки не считаются ничьей территорией.'}
+];
+
+function showLesson(i){
+ var l=_lessonsFull[i];
+ var html='<h3>'+l.t+'</h3>';
+ html+='<p style="margin-top:12px;line-height:1.6;color:#ccc">'+l.d+'</p>';
+ html+='<br><button class="btn-back" onclick="showLearnList()" style="position:static">\u2190 Назад к урокам</button>';
+ document.getElementById('learnList').innerHTML=html;
 }
 </script></body></html>
