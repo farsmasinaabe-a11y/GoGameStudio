@@ -352,11 +352,14 @@ function startGame(){
 
    showScreen('game');
    box.style.display='';
+   // force layout
+   var forceReflow=box.offsetWidth;
 
    if(!board){
-   box.innerHTML='';
-   board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
-   setupBoardClick();
+    box.innerHTML='';
+    board=new WGo.SVGBoard(box,{size:size,width:maxW,coordinates:co});
+    board.svgElement.style.height=maxW+'px';
+    setupBoardClick();
   }else{
    board.setSize(size);
    var t=board.config.theme;
