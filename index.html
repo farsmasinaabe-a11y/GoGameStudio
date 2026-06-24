@@ -61,7 +61,6 @@ button:active{background:#444}
  <label>Стиль камней</label>
  <select id="stoneStyle">
   <option value="glass" selected>Стеклянные</option>
-  <option value="flat">Плоские</option>
  </select>
  <label>Подписи на доске</label>
  <select id="coordStyle">
@@ -171,7 +170,6 @@ function startGame(){
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
- var ss=document.getElementById('stoneStyle').value;
  var co=document.getElementById('coordStyle').value==='1';
  initGame(sz,lv);
 
@@ -200,10 +198,6 @@ function startGame(){
   t.coordinates.color=styles.coord;
   t.coordinates.top=co;t.coordinates.left=co;
   t.coordinates.right=false;t.coordinates.bottom=false;
- }
- if(ss==='flat'&&t.drawHandlers){
-  t.drawHandlers.B=new WGo.SVGStoneDrawHandler();
-  t.drawHandlers.W=new WGo.SVGStoneDrawHandler();
  }
  board.redraw();
  box.style.display='';
