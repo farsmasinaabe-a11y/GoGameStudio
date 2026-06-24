@@ -25,7 +25,7 @@ button:active{background:#444}
 .game-card:hover,.game-card:active{background:#2a2a4e}
 .game-card h2{font-size:20px;margin-bottom:4px}
 .game-card p{font-size:12px;color:#888}
-#info{display:none}
+#info{display:block;font-size:11px;color:#0f0;font-family:monospace;margin:2px 0;min-height:16px}
 .tabs{display:inline-flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid #444}
 .tabs button{background:#1e1e3a;border:none;border-radius:0;padding:8px 16px;font-size:13px;min-width:0}
 .tabs button.active{background:#2a2a4a;color:#fff}
@@ -334,23 +334,34 @@ function getCell(e){
 }
 
 var cv=document.getElementById('cv');
-cv.addEventListener('mousemove',function(e){hover=getCell(e);render();});
+cv.addEventListener('mousemove',function(e){hover=getCell(e);render();
+ if(hover)document.getElementById('info').textContent='hover:('+hover.c+','+hover.r+') gM:'+gMARGIN+' gC:'+gCELL;
+});
 cv.addEventListener('mouseleave',function(){hover=null;render();});
 cv.addEventListener('click',function(e){
  if(mode==='ai'&&game.turn!==B)return;
  var rect=cv.getBoundingClientRect();
- debugDot={x:e.clientX-rect.left,y:e.clientY-rect.top};
- var c=getCell(e);if(!c){render();return}
+ var rawX=e.clientX-rect.left, rawY=e.clientY-rect.top;
+ debugDot={x:rawX,y:rawY};
+ var c=getCell(e);
+ var info='click:('+Math.round(rawX)+','+Math.round(rawY)+') cell:('+(c?c.c:'?')+','+(c?c.r:'?')+') M:'+gMARGIN+' C:'+gCELL+' W:'+cv.width+' rw:'+Math.round(rect.width);
+ document.getElementById('info').textContent=info;
+ if(!c){render();return}
  var color=mode==='practice'?practiceColor:B;
  place(c.c,c.r,color);render();
  if(mode==='ai')setTimeout(function(){debugDot=null;aiMove();},150);
 });
 cv.addEventListener('touchend',function(e){e.preventDefault();
  if(mode==='ai'&&game.turn!==B)return;
- var c=getCell(e);if(!c)return;
+ var rect=cv.getBoundingClientRect();
+ var t=e.changedTouches[0];if(!t)return;
+ var rawX=t.clientX-rect.left, rawY=t.clientY-rect.top;
+ debugDot={x:rawX,y:rawY};
+ var c=getCell(e);
+ if(!c){render();return}
  var color=mode==='practice'?practiceColor:B;
  place(c.c,c.r,color);render();
- if(mode==='ai')setTimeout(aiMove,150);
+ if(mode==='ai')setTimeout(function(){debugDot=null;aiMove();},150);
 });
 window.addEventListener('resize',function(){if(game)render();});
 </script></body></html>
