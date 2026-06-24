@@ -236,8 +236,7 @@ function goMenuHTML(){
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
-var stoneObjects=[],aiTimer=0,playerColor=B;
-var currentRules=WGo.JAPANESE_RULES,komi=6.5;
+var stoneObjects=[],aiTimer=0,playerColor=B,komi=6.5;
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
@@ -265,9 +264,9 @@ function setPracticeColor(c){
  document.getElementById('pbWhite').classList.toggle('btn-active',c===W);
 }
 
-function initGame(sz,level){
+function initGame(sz,level,rules){
  size=sz;aiLevel=level;
- game=new WGo.Game(size,currentRules);
+ game=new WGo.Game(size,rules||WGo.JAPANESE_RULES);
  practiceColor=B;
  document.getElementById('pbBlack').classList.add('btn-active');
  document.getElementById('pbWhite').classList.remove('btn-active');
@@ -305,8 +304,9 @@ function startGame(){
  var co=document.getElementById('coordStyle').value==='1';
  playerColor=parseInt(document.getElementById('colorSel').value);
  var rulesMap={japanese:WGo.JAPANESE_RULES,chinese:WGo.CHINESE_RULES,ing:WGo.ING_RULES,free:WGo.NO_RULES};
- currentRules=rulesMap[document.getElementById('rulesSel').value]||WGo.JAPANESE_RULES;
- komi=currentRules.komi;
+ var curRules=rulesMap[document.getElementById('rulesSel').value]||WGo.JAPANESE_RULES;
+ komi=curRules.komi;
+ initGame(sz,lv,curRules);
 
  // remove old stones
  if(board){
