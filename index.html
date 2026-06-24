@@ -374,35 +374,57 @@ function countStones(pos,color){
  return cnt;
 }
 
+function posBonus(x,y){
+ var cx=(size-1)/2,cy=(size-1)/2;
+ var dist=Math.abs(x-cx)+Math.abs(y-cy);
+ var bonus=Math.max(0,8-dist)*0.5;
+ if(x===0||x===size-1||y===0||y===size-1)bonus-=2;
+ return bonus;
+}
+
 function aiEvaluate(x,y){
  var result=game.tryToPlay(x,y);
  if(!result)return-1;
  var curBl=countStones(game.position,B);
  var newBl=countStones(result,B);
  var captured=curBl-newBl;
- var sc=captured*10;
- if(aiLevel===3){
-  var cx=(size-1)/2,cy=(size-1)/2;
-  var dist=Math.abs(x-cx)+Math.abs(y-cy);
-  sc+=Math.max(0,8-dist)*0.5;
-  if(x===0||x===size-1||y===0||y===size-1)sc-=2;
- }
- return sc;
+ return captured*10+(aiLevel>=2?posBonus(x,y):0);
 }
 
 function aiMove(){
  if(!gameActive||mode!=='ai'||game.turn!==-playerColor)return;
+ var aiColor=-playerColor;
  var all=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   if(game.position.get(x,y)!==E)continue;
-  var sc=aiEvaluate(x,y);
-  if(sc<0)continue;
+  var result=game.tryToPlay(x,y);
+  if(!result)continue;
+  var curBl=countStones(game.position,B);
+  var newBl=countStones(result,B);
+  var captured=curBl-newBl;
+  var sc=captured*10+posBonus(x,y);
+
+  // Pro: look ahead at opponent's best response
+  if(aiLevel===3){
+   var oppBest=0;
+   game.pushPosition(result);
+   for(var ox=0;ox<size;ox++)for(var oy=0;oy<size;oy++){
+    if(game.position.get(ox,oy)!==E)continue;
+    var oppRes=game.tryToPlay(ox,oy);
+    if(!oppRes)continue;
+    var oppCap=countStones(result,aiColor)-countStones(oppRes,aiColor);
+    if(oppCap>oppBest)oppBest=oppCap;
+   }
+   game.popPosition();
+   sc-=oppBest*5;
+  }
   all.push({x:x,y:y,s:sc});
  }
+
  if(aiLevel===1){
   if(all.length&&Math.random()<0.4){
    var rm=all[Math.floor(Math.random()*all.length)];
-   game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:-playerColor});
+   game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:aiColor});
    passed=false;undoUsed=false;
    refreshBoard();updateInfo();return;
   }
@@ -412,7 +434,7 @@ function aiMove(){
  var best=[];
  for(var i=0;i<all.length;i++)if(all[i].s===all[0].s)best.push(all[i]);else break;
  var m=best[Math.floor(Math.random()*best.length)];
- game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:-playerColor});
+ game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiColor});
  passed=false;undoUsed=false;
  refreshBoard();updateInfo();
 }
