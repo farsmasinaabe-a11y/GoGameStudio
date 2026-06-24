@@ -71,6 +71,7 @@ button:active{background:#444}
  <label>Режим игры</label>
  <div class="tabs" id="modeTabs">
   <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; ИИ</button>
+  <button data-mode="practice" onclick="switchGoMode('practice')">&#x1F3AF; Практика</button>
  </div>
  <div id="aiSettings">
   <label>Сложность ИИ</label>
@@ -191,7 +192,10 @@ function startGame(){
  komi=currentRules.komi;
 
  // remove old stones
- if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
+ if(board){
+  while(stoneObjects.length)board.removeObject(stoneObjects.pop());
+  if(board.objects)board.objects.length=0;
+ }
  stoneObjects=[];
  initGame(sz,lv);
 
@@ -357,6 +361,7 @@ function act(a){
    var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
    if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
    while(stoneObjects.length)board.removeObject(stoneObjects.pop());
+   if(board.objects)board.objects.length=0;
    stoneObjects=[];game=null;
    document.getElementById('boardBox').style.display='none';
    document.getElementById('result').style.display='none';
