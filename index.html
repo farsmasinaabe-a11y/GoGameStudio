@@ -130,10 +130,20 @@ button:active{background:#444}
  <div id="learnContent" style="text-align:left;max-width:440px;margin:0 auto"></div>
 </div>
 
+<div id="debugLog" style="position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);color:#0f0;font:10px monospace;padding:4px;max-height:30vh;overflow-y:auto;z-index:9999;white-space:pre-wrap"></div>
+
 <script>
 var tg=window.Telegram?Telegram.WebApp:null;
 if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide()}catch(e){}}
 window.onerror=function(m){alert('JS Error: '+m);return false;};
+
+var _log=[];
+function log(m){_log.push(new Date().toLocaleTimeString()+' '+m);if(_log.length>20)_log.shift();updateLog();}
+function updateLog(){
+ var el=document.getElementById('debugLog');
+ if(el)el.textContent=_log.join('\n');
+}
+log('Script started');
 
 var lang='en';
 var T={
@@ -249,9 +259,12 @@ function showScreen(id){
 
 function openGoSettings(){
  try{
+  log('openGoSettings called');
   document.getElementById('menu-go').innerHTML=goMenuHTML();
+  log('goMenuHTML done');
   showScreen('menu-go');
- }catch(e){alert('openGoSettings error: '+e.message);}
+  log('showScreen menu-go done');
+ }catch(e){log('ERROR openGoSettings: '+e.message);alert('openGoSettings error: '+e.message);}
 }
 
 function switchGoMode(m){
@@ -302,6 +315,8 @@ function startLearn(){
 }
 
 function startGame(){
+ try{
+ log('startGame mode='+mode);
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
@@ -371,6 +386,7 @@ function startGame(){
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
  document.getElementById('btnUndo').style.display=(mode==='practice'?'none':'inline');
  updateInfo();
+ }catch(e){log('ERROR startGame: '+e.message);}
 }
 
 function countStones(pos,color){
