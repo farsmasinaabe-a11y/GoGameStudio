@@ -207,25 +207,23 @@ function startGame(){
    grid:{linesColor:styles.line,starColor:styles.star},
    coordinates:{color:styles.coord,top:co,left:co,right:false,bottom:false}
   };
-
   if(!board){
    box.innerHTML='';
    board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
-   _boardClickDone=false;
    setupBoardClick();
   }else{
    board.setSize(size);
-  var t=board.config.theme;
-  t.backgroundColor=styles.bg;
-  if(t.grid){t.grid.linesColor=styles.line;t.grid.starColor=styles.star;}
-  if(t.coordinates){
-   t.coordinates.color=styles.coord;
-   t.coordinates.top=co;t.coordinates.left=co;
-   t.coordinates.right=false;t.coordinates.bottom=false;
+   var t=board.config.theme;
+   t.backgroundColor=styles.bg;
+   if(t.grid){t.grid.linesColor=styles.line;t.grid.starColor=styles.star;}
+   if(t.coordinates){
+    t.coordinates.color=styles.coord;
+    t.coordinates.top=co;t.coordinates.left=co;
+    t.coordinates.right=false;t.coordinates.bottom=false;
+   }
+   board.redraw();
   }
-  board.redraw();
- }
- box.style.display='';
+  box.style.display='';
 
  showScreen('game');
  gameActive=true;
