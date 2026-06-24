@@ -38,8 +38,12 @@ button:active{background:#444}
 <script src="wgo.custom.js"></script>
 
 <div id="menu-main" class="menu-screen">
+ <div style="margin-bottom:20px">
+  <button class="btn-sm" id="langEn" onclick="setLang('en')" style="border-radius:6px 0 0 6px">EN</button>
+  <button class="btn-sm" id="langRu" onclick="setLang('ru')" style="border-radius:0 6px 6px 0">RU</button>
+ </div>
  <div class="game-card" onclick="openGoSettings()">
-  <h2>&#x1F004;&#xFE0F; Го</h2>
+  <h2>&#x1F004;&#xFE0F; <span data-t="go">Go</span></h2>
  </div>
 </div>
 
@@ -111,14 +115,14 @@ button:active{background:#444}
  </div>
  <div id="boardBox"></div>
  <div id="btns">
-  <button id="btnPass" onclick="act('pass')">&#x23ED; Пас</button>
-  <button id="btnUndo" onclick="act('undo')">&#x21A9; Отмена</button>
-  <button class="btn-red" onclick="act('end')">&#x1F3C1; Конец</button>
+  <button id="btnPass" onclick="act('pass')">&#x23ED; <span data-t="pass">Pass</span></button>
+  <button id="btnUndo" onclick="act('undo')">&#x21A9; <span data-t="undo">Undo</span></button>
+  <button class="btn-red" onclick="act('end')">&#x1F3C1; <span data-t="end">End</span></button>
  </div>
  <div id="result" style="display:none;margin:16px">
   <h2 id="resultTitle" style="font-size:22px;margin-bottom:8px"></h2>
   <div id="resultScore" style="font-size:16px;color:#aaa;margin-bottom:16px"></div>
-  <button class="btn-big btn-green" onclick="act('closeGame')">&#x1F3AE; В меню</button>
+  <button class="btn-big btn-green" onclick="act('closeGame')">&#x1F3AE; <span data-t="menu">Menu</span></button>
  </div>
 </div>
 
@@ -129,6 +133,105 @@ button:active{background:#444}
 <script>
 var tg=window.Telegram?Telegram.WebApp:null;
 if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide()}catch(e){}}
+
+var lang='en';
+var T={
+ en:{
+  go:'Go',back:'Back',play:'Play',pass:'Pass',undo:'Undo',end:'End',
+  settings:'Settings',size:'Board size',style:'Board style',stones:'Stone style',
+  coords:'Coordinates',mode:'Game mode',ai:'AI',practice:'Practice',learn:'Learn',
+  difficulty:'AI difficulty',beginner:'Beginner',experienced:'Experienced',pro:'Professional',
+  color:'Your color',black:'Black',white:'White',rules:'Rules',
+  wood:'Wood',bamboo:'Bamboo',glass:'Glass',yes:'Yes',no:'No',
+  japanese:'Japanese (komi 6.5)',chinese:'Chinese (komi 7.5)',ing:'ING (komi 7.5)',free:'Free (komi 0)',
+  score:'Score',turn:'Move',komi:'komi',menu:'Menu',
+  backToLessons:'Back to lessons',backToMenu:'Back to menu',
+  resultBlack:'Black wins',resultWhite:'White wins'
+ },
+ ru:{
+  go:'Го',back:'Назад',play:'Играть',pass:'Пас',undo:'Отмена',end:'Конец',
+  settings:'Настройки',size:'Размер доски',style:'Стиль доски',stones:'Стиль камней',
+  coords:'Подписи на доске',mode:'Режим игры',ai:'ИИ',practice:'Практика',learn:'Обучение',
+  difficulty:'Сложность ИИ',beginner:'Новичок',experienced:'Опытный',pro:'Профессионал',
+  color:'Твой цвет',black:'Чёрные',white:'Белые',rules:'Правила',
+  wood:'Дерево',bamboo:'Бамбук',glass:'Стеклянные',yes:'Да',no:'Нет',
+  japanese:'Японские (коми 6.5)',chinese:'Китайские (коми 7.5)',ing:'ING (коми 7.5)',free:'Свободные (коми 0)',
+  score:'Счёт',turn:'Ход',komi:'коми',menu:'В меню',
+  backToLessons:'К урокам',backToMenu:'В меню',
+  resultBlack:'Чёрные победили',resultWhite:'Белые победили'
+ }
+};
+
+function t(key){return (T[lang]&&T[lang][key])||key}
+
+function setLang(l){
+ lang=l;
+ document.getElementById('langEn').classList.toggle('btn-active',l==='en');
+ document.getElementById('langRu').classList.toggle('btn-active',l==='ru');
+ // update static text
+ document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=t(el.dataset.t);});
+ // reload menu if visible
+ if(document.getElementById('menu-go').style.display!=='none')showGoMenu();
+}
+
+function showGoMenu(){
+ document.getElementById('menu-go').innerHTML=goMenuHTML();
+ showScreen('menu-go');
+}
+
+function goMenuHTML(){
+ return '<button class="btn-back" onclick="showScreen(\'menu-main\')">\u2190 '+t('back')+'</button>'+
+  '<h1>&#x1F004;&#xFE0F; '+t('go')+'</h1>'+
+  '<div class="sub">'+t('settings')+'</div>'+
+  '<button class="btn-wide" onclick="startLearn()" style="margin-bottom:16px">\uD83D\uDCDA '+t('learn')+'</button>'+
+  '<label>'+t('size')+'</label>'+
+  '<select id="sizeSel">'+
+   '<option value="9" selected>9\u00D79</option>'+
+   '<option value="13">13\u00D713</option>'+
+   '<option value="19">19\u00D719</option>'+
+  '</select>'+
+  '<label>'+t('style')+'</label>'+
+  '<select id="boardStyle">'+
+   '<option value="wood" selected>'+t('wood')+'</option>'+
+   '<option value="bamboo">'+t('bamboo')+'</option>'+
+  '</select>'+
+  '<label>'+t('stones')+'</label>'+
+  '<select id="stoneStyle">'+
+   '<option value="glass" selected>'+t('glass')+'</option>'+
+  '</select>'+
+  '<label>'+t('coords')+'</label>'+
+  '<select id="coordStyle">'+
+   '<option value="1" selected>'+t('yes')+'</option>'+
+   '<option value="0">'+t('no')+'</option>'+
+  '</select>'+
+  '<label>'+t('mode')+'</label>'+
+  '<div class="tabs" id="modeTabs">'+
+   '<button class="active" data-mode="ai" onclick="switchGoMode(\'ai\')">\uD83E\uDD16 '+t('ai')+'</button>'+
+   '<button data-mode="practice" onclick="switchGoMode(\'practice\')">\uD83C\uDFAF '+t('practice')+'</button>'+
+  '</div>'+
+  '<div id="aiSettings">'+
+   '<label>'+t('difficulty')+'</label>'+
+   '<select id="levelSel">'+
+    '<option value="1">'+t('beginner')+'</option>'+
+    '<option value="2" selected>'+t('experienced')+'</option>'+
+    '<option value="3">'+t('pro')+'</option>'+
+   '</select>'+
+   '<label>'+t('color')+'</label>'+
+   '<select id="colorSel">'+
+    '<option value="1" selected>\u26AB '+t('black')+'</option>'+
+    '<option value="-1">\u26AA '+t('white')+'</option>'+
+   '</select>'+
+   '<label>'+t('rules')+'</label>'+
+   '<select id="rulesSel">'+
+    '<option value="japanese" selected>'+t('japanese')+'</option>'+
+    '<option value="chinese">'+t('chinese')+'</option>'+
+    '<option value="ing">'+t('ing')+'</option>'+
+    '<option value="free">'+t('free')+'</option>'+
+   '</select>'+
+  '</div>'+
+  '<br>'+
+  '<button class="btn-big btn-green" onclick="startGame()">\uD83C\uDFAE '+t('play')+'</button>';
+}
 
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
@@ -144,7 +247,10 @@ function showScreen(id){
  document.getElementById(id).style.display=(id==='game'?'flex':'block');
 }
 
-function openGoSettings(){showScreen('menu-go')}
+function openGoSettings(){
+ document.getElementById('menu-go').innerHTML=goMenuHTML();
+ showScreen('menu-go');
+}
 
 function switchGoMode(m){
  mode=m;
@@ -387,7 +493,7 @@ function act(a){
 
 function endGame(){
  gameActive=false;clearTimeout(aiTimer);
- var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
+ var s=calcScore(),w=s[B]>s[W]?t('resultBlack'):t('resultWhite');
  document.getElementById('boardBox').style.display='none';
  document.getElementById('btns').style.display='none';
  document.getElementById('info').style.display='none';
