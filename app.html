@@ -257,7 +257,7 @@ function endGame(){
 }
 
 // ---- Board Rendering ----
-var hover=null,gMARGIN=24,gCELL=51;
+var hover=null,gMARGIN=24,gCELL=51,debugDot=null;
 
 function render(){
  var cv=document.getElementById('cv');
@@ -315,6 +315,11 @@ function render(){
   ctx.beginPath();ctx.arc(lx,ly,4,0,2*Math.PI);
   ctx.fillStyle=last.color===W?'#222':'#fff';ctx.fill();
  }
+
+ if(debugDot){
+  ctx.fillStyle='red';ctx.beginPath();ctx.arc(debugDot.x,debugDot.y,5,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle='white';ctx.beginPath();ctx.arc(debugDot.x,debugDot.y,2,0,2*Math.PI);ctx.fill();
+ }
 }
 
 function getCell(e){
@@ -333,10 +338,12 @@ cv.addEventListener('mousemove',function(e){hover=getCell(e);render();});
 cv.addEventListener('mouseleave',function(){hover=null;render();});
 cv.addEventListener('click',function(e){
  if(mode==='ai'&&game.turn!==B)return;
- var c=getCell(e);if(!c)return;
+ var rect=cv.getBoundingClientRect();
+ debugDot={x:e.clientX-rect.left,y:e.clientY-rect.top};
+ var c=getCell(e);if(!c){render();return}
  var color=mode==='practice'?practiceColor:B;
  place(c.c,c.r,color);render();
- if(mode==='ai')setTimeout(aiMove,150);
+ if(mode==='ai')setTimeout(function(){debugDot=null;aiMove();},150);
 });
 cv.addEventListener('touchend',function(e){e.preventDefault();
  if(mode==='ai'&&game.turn!==B)return;
