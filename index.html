@@ -135,6 +135,7 @@ var hist=[],passed=false,undoUsed=false,gameActive=false;
 var stoneObjects=[],aiTimer=0,playerColor=B,komi=6.5;
 
 function showScreen(id){
+ clearTimeout(_lessonTimer);
  document.getElementById('menu-main').style.display='none';
  document.getElementById('menu-go').style.display='none';
  document.getElementById('game').style.display='none';
@@ -479,6 +480,7 @@ function setupBoardClick(){
 }
 
 function showLearnList(){
+ clearTimeout(_lessonTimer);
  showScreen('screen-learn');
  var lessons=[
   {t:'Правила Го',d:'Цель — окружить больше территории.'},
@@ -501,35 +503,48 @@ function showLearnList(){
 }
 
 var _lessonsFull=[
- {t:'Правила Го',d:'Камни ставятся на пересечения линий. Группа живёт, пока есть дыхания (свободные соседние точки).',s:[[2,2,B],[3,2,B],[2,3,B],[3,3,B],[6,2,W],[7,2,W],[6,3,W],[7,3,W]]},
- {t:'Захват камней',d:'Белый камень в углу окружён чёрными. Осталось 1 дыхание. Если чёрные займут его — белый снимается с доски.',s:[[0,0,W],[1,0,B],[0,1,B]]},
- {t:'Правило Ko',d:'Нельзя повторять позицию. Ответный захват запрещён — сначала нужно сделать ход в другом месте.',s:[[0,0,W],[1,0,B],[0,1,B],[2,0,B],[2,1,W],[0,2,W],[1,2,B]]},
- {t:'Самоубийство',d:'Нельзя ставить камень без дыханий, если он не захватывает вражеские камни.',s:[[1,1,B],[2,1,B],[0,2,W],[1,2,W],[2,2,E],[3,2,B],[2,3,E]]},
- {t:'Глаза',d:'Два глаза делают группу неуязвимой. Один глаз — под угрозой захвата.',s:[[0,0,B],[1,0,B],[0,1,B],[2,0,B],[2,1,B],[0,2,B],[1,2,B],[2,2,B],[1,1,E],[3,0,B],[3,1,B],[3,2,B]]},
- {t:'Подсчёт очков',d:'Очки = территория + захваченные камни. Белые получают коми 6.5.',s:[[0,0,B],[1,0,B],[2,0,B],[3,0,W],[4,0,W],[0,1,B],[1,1,B],[2,1,B],[3,1,W],[4,1,W],[0,2,B],[1,2,B],[2,2,E],[3,2,W],[4,2,W],[0,3,B],[1,3,B],[2,3,B],[3,3,W],[4,3,W]]},
- {t:'Seki (Сэки)',d:'Взаимная жизнь — никто не может захватить без самоубийства. Очки внутри не считаются.',s:[[2,2,B],[3,2,W],[2,3,B],[3,3,W],[1,3,B],[4,3,W],[2,1,B],[3,1,W],[2,4,B],[3,4,W]]}
+ {t:'Правила Го',d:'Камни ставятся на пересечения линий. Группа живёт, пока есть дыхания (свободные соседние точки).',s:[[2,2,B],[3,2,B],[2,3,B],[3,3,B],[6,2,W],[7,2,W],[6,3,W],[7,3,W]],moves:[[2,2,B],[3,2,B],[2,3,B],[3,3,B],[6,2,W],[7,2,W],[6,3,W],[7,3,W]]},
+ {t:'Захват камней',d:'Белый камень окружён. Чёрные ставят камень на последнее дыхание — белый снимается с доски.',s:[[0,0,W],[1,0,B],[0,1,B],[1,1,B]],moves:[[1,0,B],[0,1,B],[0,0,W],[1,1,B]]},
+ {t:'Правило Ko',d:'Чёрные захватили белый камень. Белые НЕ могут сразу ответить в ту же точку — правило Ko.',s:[[0,0,B],[1,0,W],[0,1,B],[2,0,B],[2,1,W],[0,2,W],[1,2,B],[1,1,E]],moves:[[0,0,W],[1,0,B],[0,1,B],[2,1,W],[0,2,W],[1,2,B],[2,0,B],[1,1,B]]},
+ {t:'Самоубийство',d:'Белые НЕ могут пойти в точку A — самоубийство. Но могут в B — захватят два чёрных камня.',s:[[1,1,B],[2,1,B],[0,2,W],[1,2,W],[3,2,B],[2,2,W]],moves:[[1,1,B],[2,1,B],[0,2,W],[1,2,W],[3,2,B],[2,2,W]]},
+ {t:'Глаза',d:'У чёрной группы два глаза (A и B). Белые не могут занять оба сразу — группа неуязвима.',s:[[0,0,B],[1,0,B],[0,1,B],[2,0,B],[2,1,B],[0,2,B],[1,2,B],[2,2,B],[3,0,B],[3,1,B],[3,2,B]],moves:[[0,0,B],[1,0,B],[0,1,B],[2,0,B],[2,1,B],[0,2,B],[1,2,B],[2,2,B],[3,0,B],[3,1,B],[3,2,B]]},
+ {t:'Подсчёт очков',d:'Чёрные окружили левый угол (территория). Белые — правый верх. Очки = территория + захваты.',s:[[0,0,B],[1,0,B],[2,0,B],[3,0,W],[4,0,W],[0,1,B],[1,1,B],[2,1,B],[3,1,W],[4,1,W],[0,2,B],[1,2,B],[3,2,W],[4,2,W],[0,3,B],[1,3,B],[2,3,B],[3,3,W],[4,3,W]],moves:[[0,0,B],[1,0,B],[2,0,B],[3,0,W],[4,0,W],[0,1,B],[1,1,B],[2,1,B],[3,1,W],[4,1,W],[0,2,B],[1,2,B],[3,2,W],[4,2,W],[0,3,B],[1,3,B],[2,3,B],[3,3,W],[4,3,W]]},
+ {t:'Seki (Сэки)',d:'Никто не может захватить без самоубийства. Это сэки — очки внутри не считаются.',s:[[2,2,B],[3,2,W],[2,3,B],[3,3,W],[1,3,B],[4,3,W],[2,1,B],[3,1,W],[2,4,B],[3,4,W],[1,2,B],[4,2,W],[1,4,B],[4,4,W]],moves:[[2,2,B],[3,2,W],[2,3,B],[3,3,W],[1,3,B],[4,3,W],[2,1,B],[3,1,W],[2,4,B],[3,4,W],[1,2,B],[4,2,W],[1,4,B],[4,4,W]]}
 ];
 
+var _lessonTimer=0;
+function animLesson(board,game,sz,moves,i){
+ if(i>=moves.length){i=0;
+  for(var x=0;x<sz;x++)for(var y=0;y<sz;y++)game.setStone(x,y,E);
+  setTimeout(function(){animLesson(board,game,sz,moves,0);},800);
+  return;
+ }
+ game.setStone(moves[i][0],moves[i][1],moves[i][2]);
+ board.addObject(new WGo.FieldBoardObject(moves[i][2]===B?'B':'W',moves[i][0],moves[i][1]));
+ _lessonTimer=setTimeout(function(){animLesson(board,game,sz,moves,i+1);},500);
+}
+
 function showLesson(i){
+ clearTimeout(_lessonTimer);
  var l=_lessonsFull[i];
- var html='<button class="btn-back" onclick="showLearnList()" style="position:static;margin-bottom:12px">\u2190 К урокам</button>';
+ var backLabel='\u2190 \u041a \u0443\u0440\u043e\u043a\u0430\u043c';
+ var html='<button class="btn-back" onclick="showLearnList()" style="position:static;margin-bottom:12px">'+backLabel+'</button>';
  html+='<h3>'+(i+1)+'. '+l.t+'</h3>';
  html+='<p style="margin-top:12px;line-height:1.6;color:#ccc;margin-bottom:16px">'+l.d+'</p>';
- if(l.s&&l.s.length)html+='<div id="lessonBoard" style="display:inline-block;margin:0 auto"></div>';
+ if(l.moves&&l.moves.length)html+='<div id="lessonBoard" style="display:inline-block;margin:0 auto"></div>';
  document.getElementById('learnContent').innerHTML=html;
- if(l.s&&l.s.length){
+ if(l.moves&&l.moves.length){
   setTimeout(function(){
    var lb=document.getElementById('lessonBoard');if(!lb)return;
-   var sz=l.s.some(function(s){return s[0]>8||s[1]>8;})?19:9;
+   var sz=l.moves.some(function(s){return s[0]>8||s[1]>8;})?19:9;
    var w=Math.min(300,window.innerWidth*0.8);
    var theme={drawHandlers:{B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()}};
    var g=new WGo.Game(sz,WGo.NO_RULES);
-   l.s.forEach(function(s){g.setStone(s[0],s[1],s[2]);});
    var b=new WGo.SVGBoard(lb,{size:sz,width:w,theme:theme,coordinates:false});
-   for(var x=0;x<sz;x++)for(var y=0;y<sz;y++){
-    var c=g.position.get(x,y);if(c===E)continue;
-    b.addObject(new WGo.FieldBoardObject(c===B?'B':'W',x,y));
-   }
+   animLesson(b,g,sz,l.moves,0);
+  },100);
+ }
+}
   },100);
  }
 }
