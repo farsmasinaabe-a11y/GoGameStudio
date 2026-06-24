@@ -319,27 +319,13 @@ function makeMatteStone(color){
  var NS='http://www.w3.org/2000/svg';
  return{
   createElement:function(config,addDef){
+   var g=document.createElementNS(NS,'g');
    var s=document.createElementNS(NS,'circle');
    s.setAttribute('cx','0');s.setAttribute('cy','0');
    s.setAttribute('fill',color);s.setAttribute('r',config.theme.stoneSize);
-   var r={};r[WGo.SVG_OBJECTS]=s;r[WGo.SVG_SHADOWS]=this.createShadow(config,addDef);
+   g.appendChild(s);
+   var r={};r[WGo.SVG_OBJECTS]=g;r[WGo.SVG_SHADOWS]=null;
    return r;
-  },
-  createShadow:function(config,addDef){
-   var r=config.theme.stoneSize;
-   if(!this._sid){
-    var g=document.createElementNS(NS,'radialGradient');
-    this._sid='ms'+Math.random().toString(36).slice(2);
-    g.setAttribute('id',this._sid);
-    g.setAttribute('fr',String(Math.max(r-r*0.25,0.01)));
-    g.setAttribute('r',String(r+r/7*0.25));
-    g.innerHTML='<stop offset="0%" stop-color="rgba(62,32,32,0.5)"/><stop offset="100%" stop-color="rgba(62,32,32,0)"/>';
-    addDef(g);
-   }
-   var sh=document.createElementNS(NS,'circle');
-   sh.setAttribute('cx','0.07');sh.setAttribute('cy','0.13');
-   sh.setAttribute('r',String(r));sh.setAttribute('fill','url(#'+this._sid+')');
-   return sh;
   }
  };
 }
