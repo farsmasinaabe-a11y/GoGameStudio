@@ -1,0 +1,350 @@
+<!DOCTYPE html><html lang="ru">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Игры</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;color:#eee;font-family:system-ui;text-align:center;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:8px;user-select:none}
+canvas{border-radius:6px;box-shadow:0 4px 20px #000;max-width:min(96vw,96vh,600px);cursor:pointer;touch-action:manipulation;display:block;margin:0 auto}
+#game{display:none;flex-direction:column;align-items:center}
+#btns{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;justify-content:center}
+button{background:#2a2a4a;color:#ddd;border:1px solid #444;padding:8px 14px;border-radius:8px;font-size:14px;cursor:pointer;min-width:48px;transition:background .15s}
+button:active{background:#444}
+.btn-big{padding:12px 32px;font-size:18px;margin-top:12px}
+.btn-wide{display:block;width:220px;margin:8px auto;padding:14px;font-size:16px;border-radius:10px}
+.btn-red{background:#5a2020;border-color:#733}
+.btn-green{background:#2a5a2a;border-color:#3a3}
+.btn-back{background:#333;border-color:#555;font-size:13px;padding:6px 12px;margin-bottom:8px}
+.btn-sm{padding:6px 10px;font-size:12px;min-width:36px;border-radius:6px}
+.btn-active{background:#4a4a6a;border-color:#888}
+.menu-screen{margin-top:10vh;text-align:center;position:relative}
+.menu-screen h1{font-size:36px;margin-bottom:4px}
+.menu-screen .sub{color:#999;font-size:13px;margin-bottom:20px}
+.menu-screen label{display:block;font-size:13px;color:#aaa;margin:8px 0 4px}
+.menu-screen select{background:#2a2a4a;color:#ddd;border:1px solid #444;padding:8px 12px;border-radius:8px;font-size:15px;margin-bottom:8px;outline:none}
+.game-card{background:#1e1e3a;border:1px solid #333;border-radius:12px;padding:16px;width:220px;margin:0 auto;cursor:pointer;transition:background .15s}
+.game-card:hover,.game-card:active{background:#2a2a4e}
+.game-card h2{font-size:20px;margin-bottom:4px}
+.game-card p{font-size:12px;color:#888}
+#info{display:none}
+.tabs{display:inline-flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid #444}
+.tabs button{background:#1e1e3a;border:none;border-radius:0;padding:8px 16px;font-size:13px;min-width:0}
+.tabs button.active{background:#2a2a4a;color:#fff}
+#practiceBar{display:none;gap:8px;justify-content:center;align-items:center;margin:4px 0}
+</style></head>
+<body>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/wgo"></script>
+
+<div id="menu-main" class="menu-screen">
+ <h1>&#x1F3AE; Игры</h1>
+ <div class="sub">Выбери игру</div>
+ <div class="game-card" onclick="openGoSettings()">
+  <h2>&#x1F004;&#xFE0F; Го</h2>
+  <p>Ты &#x26AB; чёрные &bull; ИИ &#x26AA; белые</p>
+ </div>
+</div>
+
+<div id="menu-go" class="menu-screen" style="display:none">
+ <button class="btn-back" onclick="showScreen('menu-main')">&#x2190; Назад</button>
+ <h1>&#x1F004;&#xFE0F; Го</h1>
+ <div class="sub">Настройки игры</div>
+
+ <label>Размер доски</label>
+ <select id="sizeSel">
+  <option value="9" selected>9&#xD7;9</option>
+  <option value="13">13&#xD7;13</option>
+  <option value="19">19&#xD7;19</option>
+ </select>
+
+ <label>Режим</label>
+ <div class="tabs" id="modeTabs">
+  <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; Игра с ИИ</button>
+  <button data-mode="practice" onclick="switchGoMode('practice')">&#x1F3AF; Практика</button>
+ </div>
+
+ <div id="aiSettings">
+  <label>Сложность ИИ</label>
+  <select id="levelSel">
+   <option value="1">Новичок</option>
+   <option value="2" selected>Опытный</option>
+   <option value="3">Профессионал</option>
+  </select>
+ </div>
+
+ <br>
+ <button class="btn-big btn-green" onclick="startGame()">&#x1F3AE; Играть</button>
+</div>
+
+<div id="game">
+ <div id="info"></div>
+ <div id="practiceBar">
+  <span style="font-size:13px;color:#aaa">Твой цвет:</span>
+  <button id="pbBlack" class="btn-sm btn-active" onclick="setPracticeColor(1)">&#x26AB;</button>
+  <button id="pbWhite" class="btn-sm" onclick="setPracticeColor(-1)">&#x26AA;</button>
+ </div>
+ <canvas id="cv"></canvas>
+ <div id="btns">
+  <button id="btnPass" onclick="act('pass')">&#x23ED; Пас</button>
+  <button onclick="act('undo')">&#x21A9; Отмена</button>
+  <button onclick="act('score')">&#x1F4CA; Счёт</button>
+  <button class="btn-red" onclick="act('end')">&#x1F3C1; Конец</button>
+ </div>
+</div>
+
+<script>
+var tg=window.Telegram?Telegram.WebApp:null;
+if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide()}catch(e){}}
+
+var B=1,W=-1,E=0;
+var game=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
+var hist=[],passed=false,undoUsed=false;
+
+function showScreen(id){
+ document.getElementById('menu-main').style.display='none';
+ document.getElementById('menu-go').style.display='none';
+ document.getElementById('game').style.display='none';
+ document.getElementById(id).style.display=(id==='game'?'flex':'block');
+}
+
+function openGoSettings(){showScreen('menu-go')}
+
+function switchGoMode(m){
+ mode=m;
+ document.getElementById('aiSettings').style.display=(m==='ai'?'block':'none');
+ var tabs=document.getElementById('modeTabs').children;
+ for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle('active',tabs[i].dataset.mode===m);
+}
+
+function setPracticeColor(c){
+ practiceColor=c;
+ document.getElementById('pbBlack').classList.toggle('btn-active',c===B);
+ document.getElementById('pbWhite').classList.toggle('btn-active',c===W);
+}
+
+function initGame(sz,level){
+ size=sz;aiLevel=level;
+ game=new WGo.Game(size,WGo.JAPANESE_RULES);
+ practiceColor=B;
+ document.getElementById('pbBlack').classList.add('btn-active');
+ document.getElementById('pbWhite').classList.remove('btn-active');
+ hist=[];passed=false;undoUsed=false;
+}
+
+function countStones(pos,color){
+ var cnt=0;
+ for(var i=0;i<pos.grid.length;i++)if(pos.grid[i]===color)cnt++;
+ return cnt;
+}
+
+function startGame(){
+ var sz=parseInt(document.getElementById('sizeSel').value);
+ var lv=parseInt(document.getElementById('levelSel').value);
+ initGame(sz,lv);
+ showScreen('game');
+ document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
+ document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
+ render();
+}
+
+function place(x,y,c){
+ var result=game.play(x,y);
+ if(!result)return false;
+ hist.push({x:x,y:y,color:c});
+ passed=false;undoUsed=false;
+ return true;
+}
+
+function aiEvaluate(x,y){
+ var result=game.tryToPlay(x,y);
+ if(!result)return-1;
+ var curBl=countStones(game.position,B);
+ var newBl=countStones(result,B);
+ var captured=curBl-newBl;
+ var sc=captured*10;
+ if(aiLevel===3){
+  var cx=(size-1)/2,cy=(size-1)/2;
+  var dist=Math.abs(x-cx)+Math.abs(y-cy);
+  sc+=Math.max(0,8-dist)*0.5;
+  if(x===0||x===size-1||y===0||y===size-1)sc-=2;
+ }
+ return sc;
+}
+
+function aiMove(){
+ if(mode!=='ai'||game.turn!==W)return;
+ var all=[];
+ for(var x=0;x<size;x++)for(var y=0;y<size;y++){
+  if(game.position.get(x,y)!==E)continue;
+  var sc=aiEvaluate(x,y);
+  if(sc<0)continue;
+  all.push({x:x,y:y,s:sc});
+ }
+
+ if(aiLevel===1){
+  if(all.length&&Math.random()<0.4){
+   var rm=all[Math.floor(Math.random()*all.length)];
+   game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:W});
+   passed=false;undoUsed=false;render();return;
+  }
+ }
+
+ if(!all.length){act('pass');return}
+ all.sort(function(a,b){return b.s-a.s});
+ var best=[];
+ for(var i=0;i<all.length;i++)if(all[i].s===all[0].s)best.push(all[i]);else break;
+ var m=best[Math.floor(Math.random()*best.length)];
+ game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:W});
+ passed=false;undoUsed=false;render();
+}
+
+function flod(r,c){
+ var cells=[],stk=[[r,c]],borders={};
+ while(stk.length){
+  var p=stk.pop(),kr=p[0]+','+p[1];
+  if(cells.indexOf(kr)>=0)continue;cells.push(kr);
+  var nb=[[p[0]-1,p[1]],[p[0]+1,p[1]],[p[0],p[1]-1],[p[0],p[1]+1]];
+  for(var i=0;i<nb.length;i++){
+   var nr=nb[i][0],nc=nb[i][1];
+   if(nr<0||nr>=size||nc<0||nc>=size)continue;
+   var v=game.position.get(nr,nc);
+   if(v===E&&cells.indexOf(nr+','+nc)<0)stk.push([nr,nc]);
+   else if(v)borders[v]=true;
+  }
+ }
+ return{cells:cells,borders:Object.keys(borders).length===1?parseInt(Object.keys(borders)[0]):null};
+}
+
+function calcScore(){
+ var pos=game.position,s={};s[B]=0;s[W]=0;
+ var vis={};
+ for(var x=0;x<size;x++)for(var y=0;y<size;y++){
+  var v=pos.get(x,y),k=x+','+y;
+  if(v!==E)s[v]++;
+  else if(!vis[k]){
+   var reg=flod(x,y);vis[k]=true;
+   for(var i=0;i<reg.cells.length;i++)vis[reg.cells[i]]=true;
+   if(reg.borders===B)s[B]+=reg.cells.length;
+   else if(reg.borders===W)s[W]+=reg.cells.length;
+  }
+ }
+ return s;
+}
+
+function act(a){
+ if(a==='pass'){
+  if(passed&&!undoUsed){endGame();return}
+  game.pass();passed=true;undoUsed=false;
+ }else if(a==='undo'){
+  if(!hist.length)return;
+  var l=hist.pop();game.popPosition();
+  passed=false;undoUsed=true;
+  if(mode==='practice'&&hist.length){
+   var prev=hist[hist.length-1];
+   // auto-switch practice color to the opposite of last placed
+  }
+ }else if(a==='score'){
+  var sc=calcScore();
+  alert('\u26AB '+sc[B]+' : '+sc[W]+' \u26AA');
+ }else if(a==='end'){endGame();return}
+ render();if(mode==='ai')setTimeout(aiMove,150);
+}
+
+function endGame(){
+ var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
+ if(tg){tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.length}))}
+ else{alert('\uD83C\uDFC1 \u0418\u0433\u0440\u0430 \u043e\u043a\u043e\u043d\u0447\u0435\u043d\u0430!\n\u26AB '+s[B]+' : '+s[W]+' \u26AA\n'+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!')}
+ showScreen('menu-go');
+}
+
+// ---- Board Rendering ----
+var hover=null;
+
+function render(){
+ var cv=document.getElementById('cv');
+ var MARGIN=24,CELL=Math.max(22,Math.floor(460/size));
+ var W=MARGIN*2+CELL*(size-1);
+ cv.width=W;cv.height=W;
+ var ctx=cv.getContext('2d');
+
+ var woodGrad=ctx.createLinearGradient(0,0,W,W);
+ woodGrad.addColorStop(0,'#DEB77A');woodGrad.addColorStop(0.3,'#D4A951');
+ woodGrad.addColorStop(0.6,'#C89A3C');woodGrad.addColorStop(1,'#B8862D');
+ ctx.fillStyle=woodGrad;ctx.fillRect(0,0,W,W);
+
+ ctx.strokeStyle='rgba(139,101,41,0.08)';ctx.lineWidth=1;
+ for(var i=0;i<W;i+=7){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i+12,W);ctx.stroke()}
+
+ ctx.strokeStyle='#5C3A1E';ctx.lineWidth=1.2;
+ for(var i=0;i<size;i++){
+  var pos=MARGIN+i*CELL;
+  ctx.beginPath();ctx.moveTo(pos,MARGIN);ctx.lineTo(pos,MARGIN+(size-1)*CELL);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(MARGIN,pos);ctx.lineTo(MARGIN+(size-1)*CELL,pos);ctx.stroke();
+ }
+
+ var stars=size===9?[[3,3],[3,7],[5,5],[7,3],[7,7]]:
+           size===13?[[3,3],[3,7],[3,11],[7,3],[7,7],[7,11],[11,3],[11,7],[11,11]]:
+           size===19?[[4,4],[4,10],[4,16],[10,4],[10,10],[10,16],[16,4],[16,10],[16,16]]:[];
+ for(var i=0;i<stars.length;i++){
+  var sx=MARGIN+(stars[i][1]-1)*CELL,sy=MARGIN+(stars[i][0]-1)*CELL;
+  ctx.fillStyle='#3A2210';ctx.beginPath();ctx.arc(sx,sy,3.5,0,2*Math.PI);ctx.fill();
+ }
+
+ if(hover){
+  var hx=MARGIN+hover.c*CELL,hy=MARGIN+hover.r*CELL;
+  ctx.fillStyle='rgba(255,255,255,0.2)';
+  ctx.beginPath();ctx.arc(hx,hy,CELL/2-1,0,2*Math.PI);ctx.fill();
+ }
+
+ var R=CELL/2-2.5,pos=game.position;
+ for(var x=0;x<size;x++)for(var y=0;y<size;y++){
+  var v=pos.get(x,y);if(v===E)continue;
+  var cx=MARGIN+x*CELL,cy=MARGIN+y*CELL;
+  ctx.beginPath();ctx.arc(cx+2,cy+2,R,0,2*Math.PI);
+  ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fill();
+  var grad=ctx.createRadialGradient(cx-R*0.35,cy-R*0.35,R*0.1,cx,cy,R*1.1);
+  if(v===B){grad.addColorStop(0,'#555');grad.addColorStop(0.5,'#222');grad.addColorStop(1,'#0a0a0a');}
+  else{grad.addColorStop(0,'#fff');grad.addColorStop(0.5,'#f0f0f0');grad.addColorStop(1,'#c8c8c8');}
+  ctx.beginPath();ctx.arc(cx,cy,R,0,2*Math.PI);ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();ctx.arc(cx-R*0.25,cy-R*0.25,R*0.25,0,2*Math.PI);
+  ctx.fillStyle=v===B?'rgba(255,255,255,0.12)':'rgba(255,255,255,0.5)';ctx.fill();
+ }
+
+ if(hist.length){
+  var last=hist[hist.length-1],lx=MARGIN+last.x*CELL,ly=MARGIN+last.y*CELL;
+  ctx.beginPath();ctx.arc(lx,ly,4,0,2*Math.PI);
+  ctx.fillStyle=last.color===W?'#222':'#fff';ctx.fill();
+ }
+}
+
+function getCell(e){
+ var r=cv.getBoundingClientRect();
+ var x=(e.clientX||(e.touches&&e.touches[0].clientX))-r.left;
+ var y=(e.clientY||(e.touches&&e.touches[0].clientY))-r.top;
+ var scaleX=cv.width/r.width,scaleY=cv.height/r.height;
+ x*=scaleX;y*=scaleY;
+ var CELL=Math.max(22,Math.floor(460/size)),MARGIN=24;
+ var col=Math.round((x-MARGIN)/CELL);
+ var row=Math.round((y-MARGIN)/CELL);
+ return(col>=0&&col<size&&row>=0&&row<size)?{c:col,r:row}:null;
+}
+
+var cv=document.getElementById('cv');
+cv.addEventListener('mousemove',function(e){hover=getCell(e);render();});
+cv.addEventListener('mouseleave',function(){hover=null;render();});
+cv.addEventListener('click',function(e){
+ if(mode==='ai'&&game.turn!==B)return;
+ var c=getCell(e);if(!c)return;
+ var color=mode==='practice'?practiceColor:B;
+ if(!game.isValid(c.c,c.r)){render();return}
+ place(c.c,c.r,color);render();
+ if(mode==='ai')setTimeout(aiMove,150);
+});
+cv.addEventListener('touchend',function(e){e.preventDefault();
+ if(mode==='ai'&&game.turn!==B)return;
+ var c=getCell(e);if(!c)return;
+ var color=mode==='practice'?practiceColor:B;
+ if(!game.isValid(c.c,c.r)){render();return}
+ place(c.c,c.r,color);render();
+ if(mode==='ai')setTimeout(aiMove,150);
+});
+</script></body></html>
