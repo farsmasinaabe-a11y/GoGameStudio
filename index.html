@@ -426,6 +426,8 @@ function act(a){
   passed=false;undoUsed=true;
   refreshBoard();
  }else if(a==='clear'){
+  if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
+  stoneObjects=[];
   initGame(size,aiLevel);
   refreshBoard();updateInfo();
  }else if(a==='end'){endGame();return}
