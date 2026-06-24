@@ -325,10 +325,12 @@ function act(a){
 
 function endGame(){
  gameActive=false;clearTimeout(aiTimer);
- board=null;document.getElementById('boardBox').innerHTML='';
+ board=null;
+ var box=document.getElementById('boardBox');
+ box.innerHTML='';
  var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
  if(tg){tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}))}
  else{alert('\uD83C\uDFC1 \u0418\u0433\u0440\u0430 \u043e\u043a\u043e\u043d\u0447\u0435\u043d\u0430!\n\u26AB '+s[B].toFixed(1)+' : '+(s[W]+6.5).toFixed(1)+' \u26AA (\u043a\u043e\u043c\u0438 6.5)\n'+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!')}
- showScreen('menu-go');
+ requestAnimationFrame(function(){showScreen('menu-go');});
 }
 </script></body></html>
