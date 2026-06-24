@@ -61,6 +61,7 @@ button:active{background:#444}
  <label>Стиль камней</label>
  <select id="stoneStyle">
   <option value="glass" selected>Стеклянные</option>
+  <option value="matte">Матовые</option>
  </select>
  <label>Подписи на доске</label>
  <select id="coordStyle">
@@ -112,7 +113,7 @@ if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
-var stoneObjects=[],aiTimer=0;
+var stoneObjects=[],aiTimer=0,glassB=null,glassW=null;
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
@@ -170,6 +171,7 @@ function startGame(){
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
+ var ss=document.getElementById('stoneStyle').value;
  var co=document.getElementById('coordStyle').value==='1';
  initGame(sz,lv);
 
@@ -198,6 +200,15 @@ function startGame(){
   t.coordinates.color=styles.coord;
   t.coordinates.top=co;t.coordinates.left=co;
   t.coordinates.right=false;t.coordinates.bottom=false;
+ }
+ if(ss==='matte'){
+  if(!glassB)glassB=t.drawHandlers.B;
+  if(!glassW)glassW=t.drawHandlers.W;
+  t.drawHandlers.B=makeMatteStone('#1a1a1a');
+  t.drawHandlers.W=makeMatteStone('#f0f0f0');
+ }else if(glassB){
+  t.drawHandlers.B=glassB;
+  t.drawHandlers.W=glassW;
  }
  board.redraw();
  box.style.display='';
@@ -300,6 +311,35 @@ function updateInfo(){
  var bscore=sc[B];
  var wscore=sc[W]+6.5;
  document.getElementById('info').textContent='\u26AB '+bscore.toFixed(1)+' : '+wscore.toFixed(1)+' \u26AA (коми 6.5) \u0425\u043e\u0434 '+(hist.length+1);
+}
+
+function makeMatteStone(color){
+ var NS='http://www.w3.org/2000/svg';
+ return{
+  createElement:function(config,addDef){
+   var s=document.createElementNS(NS,'circle');
+   s.setAttribute('cx','0');s.setAttribute('cy','0');
+   s.setAttribute('fill',color);s.setAttribute('r',config.theme.stoneSize);
+   var r={};r[WGo.SVG_OBJECTS]=s;r[WGo.SVG_SHADOWS]=this.createShadow(config,addDef);
+   return r;
+  },
+  createShadow:function(config,addDef){
+   var r=config.theme.stoneSize;
+   if(!this._sid){
+    var g=document.createElementNS(NS,'radialGradient');
+    this._sid='ms'+Math.random().toString(36).slice(2);
+    g.setAttribute('id',this._sid);
+    g.setAttribute('fr',String(Math.max(r-r*0.25,0.01)));
+    g.setAttribute('r',String(r+r/7*0.25));
+    g.innerHTML='<stop offset="0%" stop-color="rgba(62,32,32,0.5)"/><stop offset="100%" stop-color="rgba(62,32,32,0)"/>';
+    addDef(g);
+   }
+   var sh=document.createElementNS(NS,'circle');
+   sh.setAttribute('cx','0.07');sh.setAttribute('cy','0.13');
+   sh.setAttribute('r',String(r));sh.setAttribute('fill','url(#'+this._sid+')');
+   return sh;
+  }
+ };
 }
 
 function act(a){
