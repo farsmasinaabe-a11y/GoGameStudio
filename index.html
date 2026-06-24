@@ -345,4 +345,5 @@ cv.addEventListener('touchend',function(e){e.preventDefault();
  place(c.c,c.r,color);render();
  if(mode==='ai')setTimeout(aiMove,150);
 });
+window.addEventListener('resize',function(){if(game)render();});
 </script></body></html>
