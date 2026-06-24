@@ -61,7 +61,6 @@ button:active{background:#444}
  <label>Стиль камней</label>
  <select id="stoneStyle">
   <option value="glass" selected>Стеклянные</option>
-  <option value="matte">Матовые</option>
  </select>
  <label>Подписи на доске</label>
  <select id="coordStyle">
@@ -125,8 +124,8 @@ if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
-var stoneObjects=[],aiTimer=0,lastStoneStyle='',playerColor=B;
-var currentRules=WGo.JAPANESE_RULES,komi=6.5,boardReady=true;
+var stoneObjects=[],aiTimer=0,playerColor=B;
+var currentRules=WGo.JAPANESE_RULES,komi=6.5;
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
@@ -184,7 +183,6 @@ function startGame(){
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
- var ss=document.getElementById('stoneStyle').value;
  var co=document.getElementById('coordStyle').value==='1';
  playerColor=parseInt(document.getElementById('colorSel').value);
  var rulesMap={japanese:WGo.JAPANESE_RULES,chinese:WGo.CHINESE_RULES,ing:WGo.ING_RULES,free:WGo.NO_RULES};
@@ -204,26 +202,19 @@ function startGame(){
   bamboo:{bg:'#D4C878',line:'#8B7D4A',star:'#5C4A20',coord:'#5C4A20'}
  }[bs]||{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531'};
 
- var theme={
-  backgroundColor:styles.bg,
-  grid:{linesColor:styles.line,starColor:styles.star},
-  coordinates:{color:styles.coord,top:co,left:co,right:false,bottom:false}
- };
- if(ss==='matte'){
-  theme.drawHandlers={B:makeMatteStone('#1a1a1a'),W:makeMatteStone('#f0f0f0')};
- }
+  var theme={
+   backgroundColor:styles.bg,
+   grid:{linesColor:styles.line,starColor:styles.star},
+   coordinates:{color:styles.coord,top:co,left:co,right:false,bottom:false}
+  };
 
- // recreate board if stone style changed or first run
- if(!board||ss!==lastStoneStyle){
-  boardReady=false;
-  box.innerHTML='';
-  board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
-  lastStoneStyle=ss;
-  _boardClickDone=false;
-  setupBoardClick();
-  setTimeout(function(){boardReady=true;},200);
- }else{
-  board.setSize(size);
+  if(!board){
+   box.innerHTML='';
+   board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
+   _boardClickDone=false;
+   setupBoardClick();
+  }else{
+   board.setSize(size);
   var t=board.config.theme;
   t.backgroundColor=styles.bg;
   if(t.grid){t.grid.linesColor=styles.line;t.grid.starColor=styles.star;}
@@ -238,7 +229,6 @@ function startGame(){
 
  showScreen('game');
  gameActive=true;
- boardReady=true;
  clearTimeout(aiTimer);
  document.getElementById('result').style.display='none';
  document.getElementById('btns').style.display='';
@@ -337,21 +327,6 @@ function updateInfo(){
  document.getElementById('info').textContent='\u26AB '+bscore.toFixed(1)+' : '+wscore.toFixed(1)+' \u26AA (коми '+komi+') \u0425\u043e\u0434 '+(hist.length+1);
 }
 
-function makeMatteStone(color){
- return{
-  createElement:function(config,addDef){
-   var stone=document.createElementNS(WGo.SVG_NS,'circle');
-   stone.setAttribute('cx','0');stone.setAttribute('cy','0');
-   stone.setAttribute('fill',color);stone.setAttribute('r',config.theme.stoneSize);
-   var group=document.createElementNS(WGo.SVG_NS,'g');
-   group.appendChild(stone);
-   var res={};res[WGo.SVG_OBJECTS]=group;
-   return res;
-  },
-  updateElement:function(){}
- };
-}
-
 function act(a){
  if(a==='pass'){
   if(passed&&!undoUsed){endGame();return}
@@ -416,7 +391,7 @@ function setupBoardClick(){
    refreshBoard();updateInfo();
    return;
  }
- if(!gameActive||!boardReady||(mode==='ai'&&game.turn!==playerColor))return;
+ if(!gameActive||(mode==='ai'&&game.turn!==playerColor))return;
   if(!game.play(point.x,point.y))return;
   hist.push({x:point.x,y:point.y,color:playerColor});
   passed=false;undoUsed=false;
