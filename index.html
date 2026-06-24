@@ -102,7 +102,7 @@ button:active{background:#444}
 
 <div id="game">
  <div id="info"></div>
- <div id="learnList" style="display:none;margin-top:8px;text-align:left;max-width:400px"></div>
+ <div id="practiceBar">
  <div id="practiceBar">
   <span style="font-size:13px;color:#aaa">Цвет:</span>
   <button id="pbBlack" class="btn-sm btn-active" onclick="setPracticeColor(1)">&#x26AB;</button>
@@ -122,6 +122,10 @@ button:active{background:#444}
  </div>
 </div>
 
+<div id="screen-learn" class="menu-screen" style="display:none">
+ <div id="learnContent" style="text-align:left;max-width:440px;margin:0 auto"></div>
+</div>
+
 <script>
 var tg=window.Telegram?Telegram.WebApp:null;
 if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide()}catch(e){}}
@@ -136,6 +140,7 @@ function showScreen(id){
  document.getElementById('menu-main').style.display='none';
  document.getElementById('menu-go').style.display='none';
  document.getElementById('game').style.display='none';
+ document.getElementById('screen-learn').style.display='none';
  document.getElementById(id).style.display=(id==='game'?'flex':'block');
 }
 
@@ -424,13 +429,7 @@ function setupBoardClick(){
 }
 
 function showLearnList(){
- showScreen('game');
- document.getElementById('boardBox').style.display='none';
- document.getElementById('btns').style.display='none';
- document.getElementById('info').style.display='none';
- document.getElementById('practiceBar').style.display='none';
- document.getElementById('result').style.display='none';
-
+ showScreen('screen-learn');
  var lessons=[
   {t:'Правила Го',d:'Цель — окружить больше территории. Камни ставятся на пересечения. Группа живёт, пока имеет дыхания.'},
   {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается. Захваченные камни идут в копилку.'},
@@ -449,8 +448,7 @@ function showLearnList(){
   html+='<p style="font-size:12px;color:#888;margin-top:4px">'+lessons[i].d+'</p>';
   html+='</div>';
  }
- document.getElementById('learnList').innerHTML=html;
- document.getElementById('learnList').style.display='block';
+ document.getElementById('learnContent').innerHTML=html;
 }
 
 var _lessonsFull=[
@@ -483,8 +481,7 @@ function showLesson(i){
  if(l.stones&&l.stones.length){
   html+='<div id="lessonBoard" style="display:inline-block;margin:0 auto"></div>';
  }
- document.getElementById('learnList').innerHTML=html;
-
+ document.getElementById('learnContent').innerHTML=html;
  if(l.stones&&l.stones.length){
   setTimeout(function(){
    var lb=document.getElementById('lessonBoard');
