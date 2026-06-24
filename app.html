@@ -120,8 +120,8 @@ if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide
 
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
-var hist=[],passed=false,undoUsed=false;
-var stoneObjects=[],sgfVisible=false;
+var hist=[],passed=false,undoUsed=false,gameActive=false;
+var stoneObjects=[],sgfVisible=false,aiTimer=0;
 var COL='ABCDEFGHJKLMNOPQRSTUVWXYZ';
 
 function showScreen(id){
@@ -205,24 +205,21 @@ function startGame(){
   if(!point)return;
   if(mode==='practice'){
    var cur=game.position.get(point.x,point.y);
-   if(cur===E){
-    game.addStone(point.x,point.y,practiceColor);
-   }else{
-    game.removeStone(point.x,point.y);
-   }
-   game.validatePosition();
+   game.setStone(point.x,point.y,cur===E?practiceColor:E);
    refreshBoard();updateInfo();
    return;
   }
-  if(mode==='ai'&&game.turn!==B)return;
+  if(!gameActive||(mode==='ai'&&game.turn!==B))return;
   if(!game.play(point.x,point.y))return;
   hist.push({x:point.x,y:point.y,color:B});
   passed=false;undoUsed=false;
-  refreshBoard();updateInfo();
-  if(mode==='ai')setTimeout(aiMove,200);
+ refreshBoard();updateInfo();
+ if(mode==='ai')aiTimer=setTimeout(aiMove,200);
  });
 
  showScreen('game');
+ gameActive=true;
+ clearTimeout(aiTimer);
  document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
  sgfVisible=false;document.getElementById('sgfBar').style.display='none';
@@ -252,7 +249,7 @@ function aiEvaluate(x,y){
 }
 
 function aiMove(){
- if(mode!=='ai'||game.turn!==W)return;
+ if(!gameActive||mode!=='ai'||game.turn!==W)return;
  var all=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   if(game.position.get(x,y)!==E)continue;
@@ -369,12 +366,13 @@ function act(a){
  }else if(a==='clear'){
   initGame(size,aiLevel);
   refreshBoard();updateInfo();
- }else if(a==='end'){endGame();return}
+ }else if(a==='end'){gameActive=false;clearTimeout(aiTimer);endGame();return}
  updateInfo();
- if(mode==='ai')setTimeout(aiMove,200);
+ if(mode==='ai'&&gameActive)aiTimer=setTimeout(aiMove,200);
 }
 
 function endGame(){
+ gameActive=false;clearTimeout(aiTimer);
  var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
  if(tg){tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}))}
  else{alert('\uD83C\uDFC1 \u0418\u0433\u0440\u0430 \u043e\u043a\u043e\u043d\u0447\u0435\u043d\u0430!\n\u26AB '+s[B].toFixed(1)+' : '+(s[W]+6.5).toFixed(1)+' \u26AA (\u043a\u043e\u043c\u0438 6.5)\n'+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!')}
