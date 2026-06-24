@@ -204,6 +204,7 @@ function startLearn(){showLearnList();}
 
 function startGame(){
  log('startGame');
+ try{
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
@@ -272,6 +273,8 @@ function startGame(){
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
  document.getElementById('btnUndo').style.display=(mode==='practice'?'none':'inline');
  updateInfo();
+ log('startGame done');
+ }catch(e){log('ERROR startGame: '+e.message);}
 }
 
 function countStones(pos,color){
