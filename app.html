@@ -4,13 +4,15 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;color:#eee;font-family:system-ui;text-align:center;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:8px;user-select:none}
-canvas{border-radius:6px;box-shadow:0 4px 20px #000;cursor:pointer;touch-action:manipulation;display:block;margin:0 auto;flex-shrink:0}
+canvas{border-radius:6px;box-shadow:0 4px 20px #000;display:block;margin:0 auto;flex-shrink:0}
 #game{display:none;flex-direction:column;align-items:center}
+#boardWrap{position:relative;display:inline-block}
+#hitGrid{position:absolute;top:0;left:0;width:100%;height:100%}
+.hitCell{position:absolute;border-radius:50%;cursor:pointer}
 #btns{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;justify-content:center}
 button{background:#2a2a4a;color:#ddd;border:1px solid #444;padding:8px 14px;border-radius:8px;font-size:14px;cursor:pointer;min-width:48px;transition:background .15s}
 button:active{background:#444}
 .btn-big{padding:12px 32px;font-size:18px;margin-top:12px}
-.btn-wide{display:block;width:220px;margin:8px auto;padding:14px;font-size:16px;border-radius:10px}
 .btn-red{background:#5a2020;border-color:#733}
 .btn-green{background:#2a5a2a;border-color:#3a3}
 .btn-back{background:#333;border-color:#555;font-size:13px;padding:6px 12px;margin-bottom:8px}
@@ -25,7 +27,7 @@ button:active{background:#444}
 .game-card:hover,.game-card:active{background:#2a2a4e}
 .game-card h2{font-size:20px;margin-bottom:4px}
 .game-card p{font-size:12px;color:#888}
-#info{display:block;font-size:11px;color:#0f0;font-family:monospace;margin:2px 0;min-height:16px}
+#info{display:none}
 .tabs{display:inline-flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid #444}
 .tabs button{background:#1e1e3a;border:none;border-radius:0;padding:8px 16px;font-size:13px;min-width:0}
 .tabs button.active{background:#2a2a4a;color:#fff}
@@ -48,20 +50,17 @@ button:active{background:#444}
  <button class="btn-back" onclick="showScreen('menu-main')">&#x2190; Назад</button>
  <h1>&#x1F004;&#xFE0F; Го</h1>
  <div class="sub">Настройки игры</div>
-
  <label>Размер доски</label>
  <select id="sizeSel">
   <option value="9" selected>9&#xD7;9</option>
   <option value="13">13&#xD7;13</option>
   <option value="19">19&#xD7;19</option>
  </select>
-
  <label>Режим</label>
  <div class="tabs" id="modeTabs">
   <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; Игра с ИИ</button>
   <button data-mode="practice" onclick="switchGoMode('practice')">&#x1F3AF; Практика</button>
  </div>
-
  <div id="aiSettings">
   <label>Сложность ИИ</label>
   <select id="levelSel">
@@ -70,7 +69,6 @@ button:active{background:#444}
    <option value="3">Профессионал</option>
   </select>
  </div>
-
  <br>
  <button class="btn-big btn-green" onclick="startGame()">&#x1F3AE; Играть</button>
 </div>
@@ -82,7 +80,10 @@ button:active{background:#444}
   <button id="pbBlack" class="btn-sm btn-active" onclick="setPracticeColor(1)">&#x26AB;</button>
   <button id="pbWhite" class="btn-sm" onclick="setPracticeColor(-1)">&#x26AA;</button>
  </div>
- <canvas id="cv"></canvas>
+ <div id="boardWrap">
+  <canvas id="cv"></canvas>
+  <div id="hitGrid"></div>
+ </div>
  <div id="btns">
   <button id="btnPass" onclick="act('pass')">&#x23ED; Пас</button>
   <button onclick="act('undo')">&#x21A9; Отмена</button>
@@ -98,6 +99,7 @@ if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide
 var B=1,W=-1,E=0;
 var game=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false;
+var gMARGIN=24,gCELL=51;
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
@@ -179,7 +181,6 @@ function aiMove(){
   if(sc<0)continue;
   all.push({x:x,y:y,s:sc});
  }
-
  if(aiLevel===1){
   if(all.length&&Math.random()<0.4){
    var rm=all[Math.floor(Math.random()*all.length)];
@@ -187,7 +188,6 @@ function aiMove(){
    passed=false;undoUsed=false;render();return;
   }
  }
-
  if(!all.length){act('pass');return}
  all.sort(function(a,b){return b.s-a.s});
  var best=[];
@@ -236,12 +236,8 @@ function act(a){
   game.pass();passed=true;undoUsed=false;
  }else if(a==='undo'){
   if(!hist.length)return;
-  var l=hist.pop();game.popPosition();
+  hist.pop();game.popPosition();
   passed=false;undoUsed=true;
-  if(mode==='practice'&&hist.length){
-   var prev=hist[hist.length-1];
-   // auto-switch practice color to the opposite of last placed
-  }
  }else if(a==='score'){
   var sc=calcScore();
   alert('\u26AB '+sc[B]+' : '+sc[W]+' \u26AA');
@@ -256,8 +252,49 @@ function endGame(){
  showScreen('menu-go');
 }
 
+// ---- Hit Grid (DOM-based, no coordinate math) ----
+function buildHitGrid(){
+ var grid=document.getElementById('hitGrid');
+ grid.innerHTML='';
+ grid.style.width=gMARGIN*2+gCELL*(size-1)+'px';
+ grid.style.height=gMARGIN*2+gCELL*(size-1)+'px';
+ var R=gCELL/2;
+ for(var x=0;x<size;x++){
+  for(var y=0;y<size;y++){
+   var div=document.createElement('div');
+   div.className='hitCell';
+   div.style.left=(gMARGIN+x*gCELL-R)+'px';
+   div.style.top=(gMARGIN+y*gCELL-R)+'px';
+   div.style.width=(R*2)+'px';
+   div.style.height=(R*2)+'px';
+   div.dataset.x=x;div.dataset.y=y;
+   div.addEventListener('mouseenter',function(){
+    hover={c:parseInt(this.dataset.x),r:parseInt(this.dataset.y)};render();
+   });
+   div.addEventListener('mouseleave',function(){hover=null;render();});
+   div.addEventListener('click',function(e){
+    e.stopPropagation();
+    if(mode==='ai'&&game.turn!==B)return;
+    var cx=parseInt(this.dataset.x),cy=parseInt(this.dataset.y);
+    var color=mode==='practice'?practiceColor:B;
+    place(cx,cy,color);render();
+    if(mode==='ai')setTimeout(aiMove,150);
+   });
+   div.addEventListener('touchend',function(e){
+    e.preventDefault();e.stopPropagation();
+    if(mode==='ai'&&game.turn!==B)return;
+    var cx=parseInt(this.dataset.x),cy=parseInt(this.dataset.y);
+    var color=mode==='practice'?practiceColor:B;
+    place(cx,cy,color);render();
+    if(mode==='ai')setTimeout(aiMove,150);
+   });
+   grid.appendChild(div);
+  }
+ }
+}
+
 // ---- Board Rendering ----
-var hover=null,gMARGIN=24,gCELL=51,debugDot=null;
+var hover=null;
 
 function render(){
  var cv=document.getElementById('cv');
@@ -316,52 +353,8 @@ function render(){
   ctx.fillStyle=last.color===W?'#222':'#fff';ctx.fill();
  }
 
- if(debugDot){
-  ctx.fillStyle='red';ctx.beginPath();ctx.arc(debugDot.x,debugDot.y,5,0,2*Math.PI);ctx.fill();
-  ctx.fillStyle='white';ctx.beginPath();ctx.arc(debugDot.x,debugDot.y,2,0,2*Math.PI);ctx.fill();
- }
+ buildHitGrid();
 }
 
-function getCell(e){
- var rect=cv.getBoundingClientRect();
- var scale=rect.width/cv.width;
- var t=(e.changedTouches&&e.changedTouches[0])||(e.touches&&e.touches[0]);
- var x=((t?t.clientX:e.clientX)-rect.left)/scale;
- var y=((t?t.clientY:e.clientY)-rect.top)/scale;
- var col=Math.round((x-gMARGIN)/gCELL);
- var row=Math.round((y-gMARGIN)/gCELL);
- return(col>=0&&col<size&&row>=0&&row<size)?{c:col,r:row}:null;
-}
-
-var cv=document.getElementById('cv');
-cv.addEventListener('mousemove',function(e){hover=getCell(e);render();
- if(hover)document.getElementById('info').textContent='hover:('+hover.c+','+hover.r+') gM:'+gMARGIN+' gC:'+gCELL;
-});
-cv.addEventListener('mouseleave',function(){hover=null;render();});
-cv.addEventListener('click',function(e){
- if(mode==='ai'&&game.turn!==B)return;
- var rect=cv.getBoundingClientRect();
- var rawX=e.clientX-rect.left, rawY=e.clientY-rect.top;
- debugDot={x:rawX,y:rawY};
- var c=getCell(e);
- var info='click:('+Math.round(rawX)+','+Math.round(rawY)+') cell:('+(c?c.c:'?')+','+(c?c.r:'?')+') M:'+gMARGIN+' C:'+gCELL+' W:'+cv.width+' rw:'+Math.round(rect.width);
- document.getElementById('info').textContent=info;
- if(!c){render();return}
- var color=mode==='practice'?practiceColor:B;
- place(c.c,c.r,color);render();
- if(mode==='ai')setTimeout(function(){debugDot=null;aiMove();},150);
-});
-cv.addEventListener('touchend',function(e){e.preventDefault();
- if(mode==='ai'&&game.turn!==B)return;
- var rect=cv.getBoundingClientRect();
- var t=e.changedTouches[0];if(!t)return;
- var rawX=t.clientX-rect.left, rawY=t.clientY-rect.top;
- debugDot={x:rawX,y:rawY};
- var c=getCell(e);
- if(!c){render();return}
- var color=mode==='practice'?practiceColor:B;
- place(c.c,c.r,color);render();
- if(mode==='ai')setTimeout(function(){debugDot=null;aiMove();},150);
-});
 window.addEventListener('resize',function(){if(game)render();});
 </script></body></html>
