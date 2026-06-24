@@ -4665,9 +4665,9 @@
           var stone = document.createElementNS(SVG_NS, 'circle');
           stone.setAttribute('cx', '0');
           stone.setAttribute('cy', '0');
-          stone.setAttribute('fill', '#3a3a3a');
+          stone.setAttribute('fill', '#1a1a1a');
           stone.setAttribute('r', config.theme.stoneSize);
-          stone.setAttribute('stroke', '#555');
+          stone.setAttribute('stroke', '#444');
           stone.setAttribute('stroke-width', '0.04');
           return _a = {},
               _a[SVG_OBJECTS] = stone,

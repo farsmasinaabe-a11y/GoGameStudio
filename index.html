@@ -325,20 +325,22 @@ function aiMove(){
    var sc=captured*10+posBonus(x,y);
    // penalty for leaving own groups in atari (1 liberty)
    var atariCnt=countAtari(result,aiColor);
-   sc-=atariCnt*15;
-  if(aiLevel===3){
-   var oppBest=0;
-   game.pushPosition(result);
-   for(var ox=0;ox<size;ox++)for(var oy=0;oy<size;oy++){
-    if(game.position.get(ox,oy)!==E)continue;
-    var oppRes=game.tryToPlay(ox,oy);
-    if(!oppRes)continue;
-    var oppCap=countStones(result,aiColor)-countStones(oppRes,aiColor);
-    if(oppCap>oppBest)oppBest=oppCap;
+   sc-=atariCnt*20;
+   if(aiLevel===3){
+    var oppBest=0;
+    game.pushPosition(result);
+    for(var ox=0;ox<size;ox++)for(var oy=0;oy<size;oy++){
+     if(game.position.get(ox,oy)!==E)continue;
+     var oppRes=game.tryToPlay(ox,oy);
+     if(!oppRes)continue;
+     var oppCap=countStones(result,aiColor)-countStones(oppRes,aiColor);
+     // also count how many of our groups would be in atari after opponent's move
+     var oppAtari=countAtari(oppRes,aiColor);
+     if(oppCap+oppAtari>oppBest)oppBest=oppCap+oppAtari;
+    }
+    game.popPosition();
+    sc-=oppBest*5;
    }
-   game.popPosition();
-   sc-=oppBest*5;
-  }
   all.push({x:x,y:y,s:sc});
  }
  if(aiLevel===1){
