@@ -100,7 +100,6 @@ button:active{background:#444}
 
 <div id="game">
  <div id="info"></div>
- <div id="learnList" style="display:none;margin-top:8px;text-align:left;max-width:400px"></div>
  <div id="practiceBar">
   <span style="font-size:13px;color:#aaa">Цвет:</span>
   <button id="pbBlack" class="btn-sm btn-active" onclick="setPracticeColor(1)">&#x26AB;</button>
@@ -120,6 +119,10 @@ button:active{background:#444}
  </div>
 </div>
 
+<div id="screen-learn" class="menu-screen" style="display:none">
+ <div id="learnContent" style="text-align:left;max-width:440px;margin:0 auto"></div>
+</div>
+
 <script>
 var tg=window.Telegram?Telegram.WebApp:null;
 if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide()}catch(e){}}
@@ -127,13 +130,13 @@ if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
-var stoneObjects=[],aiTimer=0,playerColor=B;
-var currentRules=WGo.JAPANESE_RULES,komi=6.5;
+var stoneObjects=[],aiTimer=0,playerColor=B,komi=6.5;
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
  document.getElementById('menu-go').style.display='none';
  document.getElementById('game').style.display='none';
+ document.getElementById('screen-learn').style.display='none';
  document.getElementById(id).style.display=(id==='game'?'flex':'block');
 }
 
@@ -152,9 +155,9 @@ function setPracticeColor(c){
  document.getElementById('pbWhite').classList.toggle('btn-active',c===W);
 }
 
-function initGame(sz,level){
+function initGame(sz,level,rules){
  size=sz;aiLevel=level;
- game=new WGo.Game(size,currentRules);
+ game=new WGo.Game(size,rules||WGo.JAPANESE_RULES);
  practiceColor=B;
  document.getElementById('pbBlack').classList.add('btn-active');
  document.getElementById('pbWhite').classList.remove('btn-active');
@@ -191,8 +194,9 @@ function startGame(){
  var co=document.getElementById('coordStyle').value==='1';
  playerColor=parseInt(document.getElementById('colorSel').value);
  var rulesMap={japanese:WGo.JAPANESE_RULES,chinese:WGo.CHINESE_RULES,ing:WGo.ING_RULES,free:WGo.NO_RULES};
- currentRules=rulesMap[document.getElementById('rulesSel').value]||WGo.JAPANESE_RULES;
- komi=currentRules.komi;
+ var curRules=rulesMap[document.getElementById('rulesSel').value]||WGo.JAPANESE_RULES;
+ komi=curRules.komi;
+ initGame(sz,lv,curRules);
 
  // remove old stones
  if(board){
@@ -260,35 +264,54 @@ function countStones(pos,color){
  return cnt;
 }
 
+function posBonus(x,y){
+ var cx=(size-1)/2,cy=(size-1)/2;
+ var dist=Math.abs(x-cx)+Math.abs(y-cy);
+ var bonus=Math.max(0,8-dist)*0.5;
+ if(x===0||x===size-1||y===0||y===size-1)bonus-=2;
+ return bonus;
+}
+
 function aiEvaluate(x,y){
  var result=game.tryToPlay(x,y);
  if(!result)return-1;
  var curBl=countStones(game.position,B);
  var newBl=countStones(result,B);
  var captured=curBl-newBl;
- var sc=captured*10;
- if(aiLevel===3){
-  var cx=(size-1)/2,cy=(size-1)/2;
-  var dist=Math.abs(x-cx)+Math.abs(y-cy);
-  sc+=Math.max(0,8-dist)*0.5;
-  if(x===0||x===size-1||y===0||y===size-1)sc-=2;
- }
- return sc;
+ return captured*10+(aiLevel>=2?posBonus(x,y):0);
 }
 
 function aiMove(){
  if(!gameActive||mode!=='ai'||game.turn!==-playerColor)return;
+ var aiColor=-playerColor;
  var all=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   if(game.position.get(x,y)!==E)continue;
-  var sc=aiEvaluate(x,y);
-  if(sc<0)continue;
+  var result=game.tryToPlay(x,y);
+  if(!result)continue;
+  var curBl=countStones(game.position,B);
+  var newBl=countStones(result,B);
+  var captured=curBl-newBl;
+  var sc=captured*10+posBonus(x,y);
+  if(aiLevel===3){
+   var oppBest=0;
+   game.pushPosition(result);
+   for(var ox=0;ox<size;ox++)for(var oy=0;oy<size;oy++){
+    if(game.position.get(ox,oy)!==E)continue;
+    var oppRes=game.tryToPlay(ox,oy);
+    if(!oppRes)continue;
+    var oppCap=countStones(result,aiColor)-countStones(oppRes,aiColor);
+    if(oppCap>oppBest)oppBest=oppCap;
+   }
+   game.popPosition();
+   sc-=oppBest*5;
+  }
   all.push({x:x,y:y,s:sc});
  }
  if(aiLevel===1){
   if(all.length&&Math.random()<0.4){
    var rm=all[Math.floor(Math.random()*all.length)];
-   game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:-playerColor});
+   game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:aiColor});
    passed=false;undoUsed=false;
    refreshBoard();updateInfo();return;
   }
@@ -298,7 +321,7 @@ function aiMove(){
  var best=[];
  for(var i=0;i<all.length;i++)if(all[i].s===all[0].s)best.push(all[i]);else break;
  var m=best[Math.floor(Math.random()*best.length)];
- game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:-playerColor});
+ game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiColor});
  passed=false;undoUsed=false;
  refreshBoard();updateInfo();
 }
@@ -421,49 +444,53 @@ function setupBoardClick(){
 }
 
 function showLearnList(){
- showScreen('game');
- document.getElementById('boardBox').style.display='none';
- document.getElementById('btns').style.display='none';
- document.getElementById('info').style.display='none';
- document.getElementById('practiceBar').style.display='none';
- document.getElementById('result').style.display='none';
-
+ showScreen('screen-learn');
  var lessons=[
-  {t:'Правила Го',d:'Цель — окружить больше территории, чем соперник. Камни ставятся на пересечения. Группа камней живёт, пока имеет дыхания.'},
-  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается с доски. Захваченные камни идут в копилку.'},
-  {t:'Правило Ko',d:'Запрещено повторять предыдущую позицию. Нельзя сразу же ответным ходом вернуть позицию, которая была до хода соперника.'},
-  {t:'Самоубийство',d:'Нельзя ставить камень в точку, где у него не будет дыханий, если только этот ход не захватывает камни соперника.'},
-  {t:'Глаза',d:'Группа с двумя глазами неуязвима — её невозможно захватить. Строй два глаза для защиты.'},
-  {t:'Подсчёт очков',d:'Очки = твоя территория + захваченные камни соперника. Белые получают коми как компенсацию за второй ход.'},
-  {t:'Seki (Сэки)',d:'Взаимная жизнь — позиция, где никто не может захватить другого без самоубийства. Очки в сэки не считаются.'}
+  {t:'Правила Го',d:'Цель — окружить больше территории.'},
+  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается с доски.'},
+  {t:'Правило Ko',d:'Запрещено повторять предыдущую позицию.'},
+  {t:'Самоубийство',d:'Нельзя ставить камень без дыханий.'},
+  {t:'Глаза',d:'Два глаза делают группу неуязвимой.'},
+  {t:'Подсчёт очков',d:'Территория + захваченные камни. Белые получают коми.'},
+  {t:'Seki (Сэки)',d:'Взаимная жизнь — никто не может захватить без самоубийства.'}
  ];
-
- var html='<h3 style="margin-bottom:12px">\uD83D\uDCDA Обучение</h3>';
+ var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">\u2190 В меню</button>';
+ html+='<h3 style="margin-bottom:12px">\uD83D\uDCDA Обучение</h3>';
  for(var i=0;i<lessons.length;i++){
   html+='<div style="background:#1e1e3a;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="showLesson('+i+')">';
-  html+='<b>'+lessons[i].t+'</b>';
+  html+='<b>'+(i+1)+'. '+lessons[i].t+'</b>';
   html+='<p style="font-size:12px;color:#888;margin-top:4px">'+lessons[i].d+'</p>';
   html+='</div>';
  }
- document.getElementById('learnList').innerHTML=html;
- document.getElementById('learnList').style.display='block';
+ document.getElementById('learnContent').innerHTML=html;
 }
 
 var _lessonsFull=[
- {t:'Правила Го',d:'Цель игры — окружить больше территории, чем соперник. Камни ставятся на пересечения линий. Группа камней живёт, пока имеет дыхания (свободные соседние точки). Игра заканчивается, когда оба игрока пасуют подряд.'},
- {t:'Захват камней',d:'Если у группы камней не осталось дыханий — она снимается с доски. Это называется захватом. Захваченные камни идут в копилку и учитываются при финальном подсчёте очков.'},
- {t:'Правило Ko',d:'Запрещено повторять предыдущую позицию. Нельзя сразу же ответным ходом вернуть позицию, которая была до хода соперника. Это предотвращает бесконечные циклы захвата.'},
- {t:'Самоубийство',d:'Нельзя ставить камень в точку, где у него не будет дыханий, если только этот ход не захватывает камни соперника. Ход, снимающий вражеские камни и дающий дыхания — разрешён.'},
- {t:'Глаза',d:'Группа с двумя глазами (отдельными внутренними пустотами) неуязвима — её невозможно захватить. Строй два глаза для защиты своих групп. Один глаз — группа под угрозой.'},
- {t:'Подсчёт очков',d:'В конце игры: твои очки = твоя территория (пустые точки, окружённые только твоими камнями) + захваченные камни соперника. Белые получают коми 6.5 как компенсацию за второй ход.'},
- {t:'Seki (Сэки)',d:'Взаимная жизнь — позиция, где группы обоих цветов не имеют двух глаз, но ни одна сторона не может захватить другую без самоубийства. Точки в сэки не считаются ничьей территорией.'}
+ {t:'Правила Го',d:'Камни ставятся на пересечения линий. Группа живёт, пока есть дыхания (свободные соседние точки).',s:[[2,2,B],[3,2,B],[2,3,B],[3,3,B],[6,2,W],[7,2,W],[6,3,W],[7,3,W]]},
+ {t:'Захват камней',d:'Белый камень в углу окружён чёрными. Осталось 1 дыхание. Если чёрные займут его — белый снимается с доски.',s:[[0,0,W],[1,0,B],[0,1,B]]},
+ {t:'Правило Ko',d:'Нельзя повторять позицию. Ответный захват запрещён — сначала нужно сделать ход в другом месте.',s:[[0,0,W],[1,0,B],[0,1,B],[2,0,B],[2,1,W],[0,2,W],[1,2,B]]},
+ {t:'Самоубийство',d:'Нельзя ставить камень без дыханий, если он не захватывает вражеские камни.',s:[[1,1,B],[2,1,B],[0,2,W],[1,2,W],[2,2,E],[3,2,B],[2,3,E]]},
+ {t:'Глаза',d:'Два глаза делают группу неуязвимой. Один глаз — под угрозой захвата.',s:[[0,0,B],[1,0,B],[0,1,B],[2,0,B],[2,1,B],[0,2,B],[1,2,B],[2,2,B],[1,1,E],[3,0,B],[3,1,B],[3,2,B]]},
+ {t:'Подсчёт очков',d:'Очки = территория + захваченные камни. Белые получают коми 6.5.',s:[[0,0,B],[1,0,B],[2,0,B],[3,0,W],[4,0,W],[0,1,B],[1,1,B],[2,1,B],[3,1,W],[4,1,W],[0,2,B],[1,2,B],[2,2,E],[3,2,W],[4,2,W],[0,3,B],[1,3,B],[2,3,B],[3,3,W],[4,3,W]]},
+ {t:'Seki (Сэки)',d:'Взаимная жизнь — никто не может захватить без самоубийства. Очки внутри не считаются.',s:[[2,2,B],[3,2,W],[2,3,B],[3,3,W],[1,3,B],[4,3,W],[2,1,B],[3,1,W],[2,4,B],[3,4,W]]}
 ];
 
 function showLesson(i){
  var l=_lessonsFull[i];
- var html='<h3>'+l.t+'</h3>';
- html+='<p style="margin-top:12px;line-height:1.6;color:#ccc">'+l.d+'</p>';
- html+='<br><button class="btn-back" onclick="showLearnList()" style="position:static">\u2190 Назад к урокам</button>';
- document.getElementById('learnList').innerHTML=html;
+ var html='<button class="btn-back" onclick="showLearnList()" style="position:static;margin-bottom:12px">\u2190 К урокам</button>';
+ html+='<h3>'+(i+1)+'. '+l.t+'</h3>';
+ html+='<p style="margin-top:12px;line-height:1.6;color:#ccc;margin-bottom:16px">'+l.d+'</p>';
+ if(l.s&&l.s.length)html+='<div id="lessonBoard" style="display:inline-block;margin:0 auto"></div>';
+ document.getElementById('learnContent').innerHTML=html;
+ if(l.s&&l.s.length){
+  setTimeout(function(){
+   var lb=document.getElementById('lessonBoard');if(!lb)return;
+   var sz=l.s.some(function(s){return s[0]>8||s[1]>8;})?19:9;
+   var g=new WGo.Game(sz,WGo.NO_RULES);
+   l.s.forEach(function(s){g.setStone(s[0],s[1],s[2]);});
+   var b=new WGo.SVGBoard(lb,{size:sz,width:Math.min(320,window.innerWidth*0.85),coordinates:false});
+   for(var x=0;x<sz;x++)for(var y=0;y<sz;y++){var c=g.position.get(x,y);if(c!==E)b.addObject(new WGo.FieldBoardObject(c===B?'B':'W',x,y));}
+  },100);
+ }
 }
 </script></body></html>
