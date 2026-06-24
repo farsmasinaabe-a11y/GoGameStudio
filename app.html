@@ -56,7 +56,6 @@ button:active{background:#444}
  <label>Доска</label>
  <select id="boardStyle">
   <option value="wood" selected>Дерево</option>
-  <option value="dark">Тёмная</option>
   <option value="bamboo">Бамбук</option>
  </select>
  <label>Камни</label>
@@ -198,6 +197,7 @@ function startGame(){
  stoneObjects=[];
 
  if(!board||curSettings!==lastSettings){
+  _boardClickSetup=false;
   box.innerHTML='';
   board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
   lastSettings=curSettings;
