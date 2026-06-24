@@ -80,6 +80,11 @@ button:active{background:#444}
    <option value="2" selected>Опытный</option>
    <option value="3">Профессионал</option>
   </select>
+  <label>Твой цвет</label>
+  <select id="colorSel">
+   <option value="1" selected>⚫ Чёрные</option>
+   <option value="-1">⚪ Белые</option>
+  </select>
  </div>
  <br>
  <button class="btn-big btn-green" onclick="startGame()">&#x1F3AE; Играть</button>
@@ -113,7 +118,7 @@ if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
-var stoneObjects=[],aiTimer=0,lastStoneStyle='';
+var stoneObjects=[],aiTimer=0,lastStoneStyle='',playerColor=B;
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
@@ -173,6 +178,7 @@ function startGame(){
  var bs=document.getElementById('boardStyle').value;
  var ss=document.getElementById('stoneStyle').value;
  var co=document.getElementById('coordStyle').value==='1';
+ playerColor=parseInt(document.getElementById('colorSel').value);
 
  // remove old stones
  if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
@@ -251,7 +257,7 @@ function aiEvaluate(x,y){
 }
 
 function aiMove(){
- if(!gameActive||mode!=='ai'||game.turn!==W)return;
+ if(!gameActive||mode!=='ai'||game.turn!==-playerColor)return;
  var all=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   if(game.position.get(x,y)!==E)continue;
@@ -262,7 +268,7 @@ function aiMove(){
  if(aiLevel===1){
   if(all.length&&Math.random()<0.4){
    var rm=all[Math.floor(Math.random()*all.length)];
-   game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:W});
+   game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:-playerColor});
    passed=false;undoUsed=false;
    refreshBoard();updateInfo();return;
   }
@@ -272,7 +278,7 @@ function aiMove(){
  var best=[];
  for(var i=0;i<all.length;i++)if(all[i].s===all[0].s)best.push(all[i]);else break;
  var m=best[Math.floor(Math.random()*best.length)];
- game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:W});
+ game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:-playerColor});
  passed=false;undoUsed=false;
  refreshBoard();updateInfo();
 }
@@ -396,9 +402,9 @@ function setupBoardClick(){
    refreshBoard();updateInfo();
    return;
   }
-  if(!gameActive||(mode==='ai'&&game.turn!==B))return;
+  if(!gameActive||(mode==='ai'&&game.turn!==playerColor))return;
   if(!game.play(point.x,point.y))return;
-  hist.push({x:point.x,y:point.y,color:B});
+  hist.push({x:point.x,y:point.y,color:playerColor});
   passed=false;undoUsed=false;
   refreshBoard();updateInfo();
   if(mode==='ai')aiTimer=setTimeout(aiMove,200);
