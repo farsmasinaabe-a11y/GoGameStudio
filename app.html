@@ -206,9 +206,6 @@ function startGame(){
  if(ss==='flat'){
   t.drawHandlers.B=new WGo.SVGStoneDrawHandler();
   t.drawHandlers.W=new WGo.SVGStoneDrawHandler();
- }else{
-  delete t.drawHandlers.B;
-  delete t.drawHandlers.W;
  }
  board.redraw();
  box.style.display='';
