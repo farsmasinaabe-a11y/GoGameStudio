@@ -481,67 +481,10 @@ function setupBoardClick(){
 function showLearnList(){
  clearTimeout(_lessonTimer);
  showScreen('screen-learn');
- var lessons=[
-  {t:'Правила Го',d:'Цель — окружить больше территории.'},
-  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается с доски.'},
-  {t:'Правило Ko',d:'Запрещено повторять предыдущую позицию.'},
-  {t:'Самоубийство',d:'Нельзя ставить камень без дыханий.'},
-  {t:'Глаза',d:'Два глаза делают группу неуязвимой.'},
-  {t:'Подсчёт очков',d:'Территория + захваченные камни. Белые получают коми.'},
-  {t:'Seki (Сэки)',d:'Взаимная жизнь — никто не может захватить без самоубийства.'}
- ];
  var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">\u2190 В меню</button>';
- html+='<h3 style="margin-bottom:12px">\uD83D\uDCDA Обучение</h3>';
- for(var i=0;i<lessons.length;i++){
-  html+='<div style="background:#1e1e3a;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="showLesson('+i+')">';
-  html+='<b>'+(i+1)+'. '+lessons[i].t+'</b>';
-  html+='<p style="font-size:12px;color:#888;margin-top:4px">'+lessons[i].d+'</p>';
-  html+='</div>';
- }
+ html+='<div style="width:100%;height:75vh;margin-top:8px">';
+ html+='<iframe src="https://way-to-go.gitlab.io/ru/" style="width:100%;height:100%;border:none;border-radius:8px"></iframe>';
+ html+='</div>';
  document.getElementById('learnContent').innerHTML=html;
 }
-
-var _lessonsFull=[
- {t:'Правила Го',d:'Камни ставятся на пересечения линий. Группа живёт, пока есть дыхания (свободные соседние точки).',s:[[2,2,B],[3,2,B],[2,3,B],[3,3,B],[6,2,W],[7,2,W],[6,3,W],[7,3,W]],moves:[[2,2,B],[3,2,B],[2,3,B],[3,3,B],[6,2,W],[7,2,W],[6,3,W],[7,3,W]]},
- {t:'Захват камней',d:'Белый камень окружён. Чёрные ставят камень на последнее дыхание — белый снимается с доски.',s:[[0,0,W],[1,0,B],[0,1,B],[1,1,B]],moves:[[1,0,B],[0,1,B],[0,0,W],[1,1,B]]},
- {t:'Правило Ko',d:'Чёрные захватили белый камень. Белые НЕ могут сразу ответить в ту же точку — правило Ko.',s:[[0,0,B],[1,0,W],[0,1,B],[2,0,B],[2,1,W],[0,2,W],[1,2,B],[1,1,E]],moves:[[0,0,W],[1,0,B],[0,1,B],[2,1,W],[0,2,W],[1,2,B],[2,0,B],[1,1,B]]},
- {t:'Самоубийство',d:'Белые НЕ могут пойти в точку A — самоубийство. Но могут в B — захватят два чёрных камня.',s:[[1,1,B],[2,1,B],[0,2,W],[1,2,W],[3,2,B],[2,2,W]],moves:[[1,1,B],[2,1,B],[0,2,W],[1,2,W],[3,2,B],[2,2,W]]},
- {t:'Глаза',d:'У чёрной группы два глаза (A и B). Белые не могут занять оба сразу — группа неуязвима.',s:[[0,0,B],[1,0,B],[0,1,B],[2,0,B],[2,1,B],[0,2,B],[1,2,B],[2,2,B],[3,0,B],[3,1,B],[3,2,B]],moves:[[0,0,B],[1,0,B],[0,1,B],[2,0,B],[2,1,B],[0,2,B],[1,2,B],[2,2,B],[3,0,B],[3,1,B],[3,2,B]]},
- {t:'Подсчёт очков',d:'Чёрные окружили левый угол (территория). Белые — правый верх. Очки = территория + захваты.',s:[[0,0,B],[1,0,B],[2,0,B],[3,0,W],[4,0,W],[0,1,B],[1,1,B],[2,1,B],[3,1,W],[4,1,W],[0,2,B],[1,2,B],[3,2,W],[4,2,W],[0,3,B],[1,3,B],[2,3,B],[3,3,W],[4,3,W]],moves:[[0,0,B],[1,0,B],[2,0,B],[3,0,W],[4,0,W],[0,1,B],[1,1,B],[2,1,B],[3,1,W],[4,1,W],[0,2,B],[1,2,B],[3,2,W],[4,2,W],[0,3,B],[1,3,B],[2,3,B],[3,3,W],[4,3,W]]},
- {t:'Seki (Сэки)',d:'Никто не может захватить без самоубийства. Это сэки — очки внутри не считаются.',s:[[2,2,B],[3,2,W],[2,3,B],[3,3,W],[1,3,B],[4,3,W],[2,1,B],[3,1,W],[2,4,B],[3,4,W],[1,2,B],[4,2,W],[1,4,B],[4,4,W]],moves:[[2,2,B],[3,2,W],[2,3,B],[3,3,W],[1,3,B],[4,3,W],[2,1,B],[3,1,W],[2,4,B],[3,4,W],[1,2,B],[4,2,W],[1,4,B],[4,4,W]]}
-];
-
-var _lessonTimer=0;
-function animLesson(board,game,sz,moves,i){
- if(i>=moves.length){i=0;
-  for(var x=0;x<sz;x++)for(var y=0;y<sz;y++)game.setStone(x,y,E);
-  setTimeout(function(){animLesson(board,game,sz,moves,0);},800);
-  return;
- }
- game.setStone(moves[i][0],moves[i][1],moves[i][2]);
- board.addObject(new WGo.FieldBoardObject(moves[i][2]===B?'B':'W',moves[i][0],moves[i][1]));
- _lessonTimer=setTimeout(function(){animLesson(board,game,sz,moves,i+1);},500);
-}
-
-function showLesson(i){
- clearTimeout(_lessonTimer);
- var l=_lessonsFull[i];
- var backLabel='\u2190 \u041a \u0443\u0440\u043e\u043a\u0430\u043c';
- var html='<button class="btn-back" onclick="showLearnList()" style="position:static;margin-bottom:12px">'+backLabel+'</button>';
- html+='<h3>'+(i+1)+'. '+l.t+'</h3>';
- html+='<p style="margin-top:12px;line-height:1.6;color:#ccc;margin-bottom:16px">'+l.d+'</p>';
- if(l.moves&&l.moves.length)html+='<div id="lessonBoard" style="display:inline-block;margin:0 auto"></div>';
- document.getElementById('learnContent').innerHTML=html;
- if(l.moves&&l.moves.length){
-  setTimeout(function(){
-   var lb=document.getElementById('lessonBoard');if(!lb)return;
-   var sz=l.moves.some(function(s){return s[0]>8||s[1]>8;})?19:9;
-   var w=Math.min(300,window.innerWidth*0.8);
-   var theme={drawHandlers:{B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()}};
-   var g=new WGo.Game(sz,WGo.NO_RULES);
-   var b=new WGo.SVGBoard(lb,{size:sz,width:w,theme:theme,coordinates:false});
-    animLesson(b,g,sz,l.moves,0);
-   },100);
-  }
- }
 </script></body></html>
