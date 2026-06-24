@@ -325,9 +325,10 @@ function makeMatteStone(color){
    stone.setAttribute('fill',color);stone.setAttribute('r',config.theme.stoneSize);
    var group=document.createElementNS(WGo.SVG_NS,'g');
    group.appendChild(stone);
-   var res={};res[WGo.SVG_OBJECTS]=group;res[WGo.SVG_SHADOWS]=null;
+   var res={};res[WGo.SVG_OBJECTS]=group;
    return res;
-  }
+  },
+  updateElement:function(){}
  };
 }
 
