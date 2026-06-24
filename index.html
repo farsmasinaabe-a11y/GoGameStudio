@@ -4,11 +4,8 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;color:#eee;font-family:system-ui;text-align:center;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:8px;user-select:none}
-canvas{border-radius:6px;box-shadow:0 4px 20px #000;display:block;margin:0 auto;flex-shrink:0}
 #game{display:none;flex-direction:column;align-items:center}
-#boardWrap{position:relative;display:inline-block}
-#hitGrid{position:absolute;top:0;left:0;z-index:5;pointer-events:none}
-.hitCell{position:absolute;border-radius:50%;cursor:pointer;border:1px solid red;pointer-events:auto}
+#boardBox{display:inline-block}
 #btns{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;justify-content:center}
 button{background:#2a2a4a;color:#ddd;border:1px solid #444;padding:8px 14px;border-radius:8px;font-size:14px;cursor:pointer;min-width:48px;transition:background .15s}
 button:active{background:#444}
@@ -27,14 +24,13 @@ button:active{background:#444}
 .game-card:hover,.game-card:active{background:#2a2a4e}
 .game-card h2{font-size:20px;margin-bottom:4px}
 .game-card p{font-size:12px;color:#888}
-#info{display:none}
 .tabs{display:inline-flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid #444}
 .tabs button{background:#1e1e3a;border:none;border-radius:0;padding:8px 16px;font-size:13px;min-width:0}
 .tabs button.active{background:#2a2a4a;color:#fff}
 #practiceBar{display:none;gap:8px;justify-content:center;align-items:center;margin:4px 0}
+#info{font-size:12px;color:#aaa;margin:2px 0;min-height:18px}
 </style></head>
 <body>
-<div style="background:#f00;color:#fff;padding:4px;font-size:12px;text-align:center;position:fixed;top:0;left:0;right:0;z-index:999">v7 DEBUG</div>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/wgo"></script>
 
@@ -81,10 +77,7 @@ button:active{background:#444}
   <button id="pbBlack" class="btn-sm btn-active" onclick="setPracticeColor(1)">&#x26AB;</button>
   <button id="pbWhite" class="btn-sm" onclick="setPracticeColor(-1)">&#x26AA;</button>
  </div>
- <div id="boardWrap">
-  <canvas id="cv"></canvas>
-  <div id="hitGrid"></div>
- </div>
+ <div id="boardBox"></div>
  <div id="btns">
   <button id="btnPass" onclick="act('pass')">&#x23ED; Пас</button>
   <button onclick="act('undo')">&#x21A9; Отмена</button>
@@ -98,9 +91,9 @@ var tg=window.Telegram?Telegram.WebApp:null;
 if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide()}catch(e){}}
 
 var B=1,W=-1,E=0;
-var game=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
+var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false;
-var gMARGIN=24,gCELL=51;
+var stoneObjects=[];
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
@@ -130,31 +123,61 @@ function initGame(sz,level){
  practiceColor=B;
  document.getElementById('pbBlack').classList.add('btn-active');
  document.getElementById('pbWhite').classList.remove('btn-active');
- hist=[];passed=false;undoUsed=false;
+ hist=[];passed=false;undoUsed=false;stoneObjects=[];
 }
 
-function countStones(pos,color){
- var cnt=0;
- for(var i=0;i<pos.grid.length;i++)if(pos.grid[i]===color)cnt++;
- return cnt;
+function updateBoard(){
+ var pos=game.position;
+ var newStones=[];
+ for(var x=0;x<size;x++)for(var y=0;y<size;y++){
+  var c=pos.get(x,y);
+  if(c===E)continue;
+  var existing=stoneObjects.find(function(o){return o.x===x&&o.y===y&&o.color===c;});
+  if(existing){newStones.push(existing);continue}
+  var obj=new WGo.FieldBoardObject(c===B?'B':'W',x,y);
+  board.addObject(obj);
+  obj.color=c;
+  newStones.push(obj);
+ }
+ for(var i=0;i<stoneObjects.length;i++){
+  if(newStones.indexOf(stoneObjects[i])<0)board.removeObject(stoneObjects[i]);
+ }
+ stoneObjects=newStones;
 }
 
 function startGame(){
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  initGame(sz,lv);
+
+ var box=document.getElementById('boardBox');
+ box.innerHTML='';
+ var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.65,600);
+ board=new WGo.SVGBoard(box,{size:size,width:maxW,coordinates:false});
+ board.setSize(size);
+
+ board.on('click',function(evt,point){
+  if(!point)return;
+  if(mode==='ai'&&game.turn!==B)return;
+  var color=mode==='practice'?practiceColor:B;
+  if(!game.play(point.x,point.y))return;
+  hist.push({x:point.x,y:point.y,color:color});
+  passed=false;undoUsed=false;
+  updateBoard();
+  updateInfo();
+  if(mode==='ai')setTimeout(aiMove,200);
+ });
+
  showScreen('game');
  document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
- render();
+ updateInfo();
 }
 
-function place(x,y,c){
- var result=game.play(x,y);
- if(!result)return false;
- hist.push({x:x,y:y,color:c});
- passed=false;undoUsed=false;
- return true;
+function countStones(pos,color){
+ var cnt=0;
+ for(var i=0;i<pos.grid.length;i++)if(pos.grid[i]===color)cnt++;
+ return cnt;
 }
 
 function aiEvaluate(x,y){
@@ -186,7 +209,8 @@ function aiMove(){
   if(all.length&&Math.random()<0.4){
    var rm=all[Math.floor(Math.random()*all.length)];
    game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:W});
-   passed=false;undoUsed=false;render();return;
+   passed=false;undoUsed=false;
+   updateBoard();updateInfo();return;
   }
  }
  if(!all.length){act('pass');return}
@@ -195,7 +219,8 @@ function aiMove(){
  for(var i=0;i<all.length;i++)if(all[i].s===all[0].s)best.push(all[i]);else break;
  var m=best[Math.floor(Math.random()*best.length)];
  game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:W});
- passed=false;undoUsed=false;render();
+ passed=false;undoUsed=false;
+ updateBoard();updateInfo();
 }
 
 function flod(r,c){
@@ -231,138 +256,33 @@ function calcScore(){
  return s;
 }
 
+function updateInfo(){
+ var sc=calcScore();
+ document.getElementById('info').textContent='\u26AB '+sc[B]+':'+sc[W]+' \u26AA \u0425\u043e\u0434 '+(hist.length+1);
+}
+
 function act(a){
  if(a==='pass'){
   if(passed&&!undoUsed){endGame();return}
   game.pass();passed=true;undoUsed=false;
+  hist.push(null);
  }else if(a==='undo'){
   if(!hist.length)return;
   hist.pop();game.popPosition();
   passed=false;undoUsed=true;
+  updateBoard();
  }else if(a==='score'){
   var sc=calcScore();
   alert('\u26AB '+sc[B]+' : '+sc[W]+' \u26AA');
  }else if(a==='end'){endGame();return}
- render();if(mode==='ai')setTimeout(aiMove,150);
+ updateInfo();
+ if(mode==='ai')setTimeout(aiMove,200);
 }
 
 function endGame(){
  var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
- if(tg){tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.length}))}
+ if(tg){tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}))}
  else{alert('\uD83C\uDFC1 \u0418\u0433\u0440\u0430 \u043e\u043a\u043e\u043d\u0447\u0435\u043d\u0430!\n\u26AB '+s[B]+' : '+s[W]+' \u26AA\n'+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!')}
  showScreen('menu-go');
 }
-
-// ---- Hit Grid (DOM-based, no coordinate math) ----
-function buildHitGrid(){
- var grid=document.getElementById('hitGrid');
- grid.innerHTML='';
- grid.style.width=gMARGIN*2+gCELL*(size-1)+'px';
- grid.style.height=gMARGIN*2+gCELL*(size-1)+'px';
- var R=gCELL/2;
- for(var x=0;x<size;x++){
-  for(var y=0;y<size;y++){
-   var div=document.createElement('div');
-   div.className='hitCell';
-   div.style.left=(gMARGIN+x*gCELL-R)+'px';
-   div.style.top=(gMARGIN+y*gCELL-R)+'px';
-   div.style.width=(R*2)+'px';
-   div.style.height=(R*2)+'px';
-   div.dataset.x=x;div.dataset.y=y;
-   div.addEventListener('mouseenter',function(){
-    hover={c:parseInt(this.dataset.x),r:parseInt(this.dataset.y)};render();
-   });
-   div.addEventListener('mouseleave',function(){hover=null;render();});
-   div.addEventListener('click',function(e){
-    e.stopPropagation();
-    var cx=parseInt(this.dataset.x),cy=parseInt(this.dataset.y);
-    alert('click cell: '+cx+','+cy+'  M:'+gMARGIN+' C:'+gCELL);
-    if(mode==='ai'&&game.turn!==B)return;
-    var color=mode==='practice'?practiceColor:B;
-    place(cx,cy,color);render();
-    if(mode==='ai')setTimeout(aiMove,150);
-   });
-   div.addEventListener('touchend',function(e){
-    e.preventDefault();e.stopPropagation();
-    if(mode==='ai'&&game.turn!==B)return;
-    var cx=parseInt(this.dataset.x),cy=parseInt(this.dataset.y);
-    var color=mode==='practice'?practiceColor:B;
-    place(cx,cy,color);render();
-    if(mode==='ai')setTimeout(aiMove,150);
-   });
-   grid.appendChild(div);
-  }
- }
-}
-
-// ---- Board Rendering ----
-var hover=null;
-
-function render(){
- var cv=document.getElementById('cv');
- var maxW=Math.min(window.innerWidth*0.96, window.innerHeight*0.96, 600);
- gCELL=Math.max(22,Math.floor((maxW-2*gMARGIN)/(size-1)));
- var W=gMARGIN*2+gCELL*(size-1);
- cv.width=W;cv.height=W;cv.style.width=W+'px';cv.style.height=W+'px';
- var ctx=cv.getContext('2d');
-
- var woodGrad=ctx.createLinearGradient(0,0,W,W);
- woodGrad.addColorStop(0,'#DEB77A');woodGrad.addColorStop(0.3,'#D4A951');
- woodGrad.addColorStop(0.6,'#C89A3C');woodGrad.addColorStop(1,'#B8862D');
- ctx.fillStyle=woodGrad;ctx.fillRect(0,0,W,W);
-
- ctx.strokeStyle='rgba(139,101,41,0.08)';ctx.lineWidth=1;
- for(var i=0;i<W;i+=7){ctx.beginPath();ctx.moveTo(i,0);ctx.lineTo(i+12,W);ctx.stroke()}
-
- ctx.strokeStyle='#5C3A1E';ctx.lineWidth=1.2;
- for(var i=0;i<size;i++){
-  var pos=gMARGIN+i*gCELL;
-  ctx.beginPath();ctx.moveTo(pos,gMARGIN);ctx.lineTo(pos,gMARGIN+(size-1)*gCELL);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(gMARGIN,pos);ctx.lineTo(gMARGIN+(size-1)*gCELL,pos);ctx.stroke();
- }
-
- var stars=size===9?[[3,3],[3,7],[5,5],[7,3],[7,7]]:
-           size===13?[[3,3],[3,7],[3,11],[7,3],[7,7],[7,11],[11,3],[11,7],[11,11]]:
-           size===19?[[4,4],[4,10],[4,16],[10,4],[10,10],[10,16],[16,4],[16,10],[16,16]]:[];
- for(var i=0;i<stars.length;i++){
-  var sx=gMARGIN+(stars[i][1]-1)*gCELL,sy=gMARGIN+(stars[i][0]-1)*gCELL;
-  ctx.fillStyle='#3A2210';ctx.beginPath();ctx.arc(sx,sy,3.5,0,2*Math.PI);ctx.fill();
- }
-
- if(hover){
-  var hx=gMARGIN+hover.c*gCELL,hy=gMARGIN+hover.r*gCELL;
-  ctx.fillStyle='rgba(255,255,255,0.2)';
-  ctx.beginPath();ctx.arc(hx,hy,gCELL/2-1,0,2*Math.PI);ctx.fill();
- }
-
- var R=gCELL/2-2.5,pos=game.position;
- // DEBUG: draw cell numbers at top-left area
- ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='9px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
- for(var x=0;x<size;x++)for(var y=0;y<size;y++){
-  var cx=gMARGIN+x*gCELL,cy=gMARGIN+y*gCELL;
-  if(x<3&&y<3)ctx.fillText(x+','+y,cx,cy);
- }
- for(var x=0;x<size;x++)for(var y=0;y<size;y++){
-  var v=pos.get(x,y);if(v===E)continue;
-  var cx=gMARGIN+x*gCELL,cy=gMARGIN+y*gCELL;
-  ctx.beginPath();ctx.arc(cx+2,cy+2,R,0,2*Math.PI);
-  ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fill();
-  var grad=ctx.createRadialGradient(cx-R*0.35,cy-R*0.35,R*0.1,cx,cy,R*1.1);
-  if(v===B){grad.addColorStop(0,'#555');grad.addColorStop(0.5,'#222');grad.addColorStop(1,'#0a0a0a');}
-  else{grad.addColorStop(0,'#fff');grad.addColorStop(0.5,'#f0f0f0');grad.addColorStop(1,'#c8c8c8');}
-  ctx.beginPath();ctx.arc(cx,cy,R,0,2*Math.PI);ctx.fillStyle=grad;ctx.fill();
-  ctx.beginPath();ctx.arc(cx-R*0.25,cy-R*0.25,R*0.25,0,2*Math.PI);
-  ctx.fillStyle=v===B?'rgba(255,255,255,0.12)':'rgba(255,255,255,0.5)';ctx.fill();
- }
-
- if(hist.length){
-  var last=hist[hist.length-1],lx=gMARGIN+last.x*gCELL,ly=gMARGIN+last.y*gCELL;
-  ctx.beginPath();ctx.arc(lx,ly,4,0,2*Math.PI);
-  ctx.fillStyle=last.color===W?'#222':'#fff';ctx.fill();
- }
-
- buildHitGrid();
-}
-
-window.addEventListener('resize',function(){if(game)render();});
 </script></body></html>
