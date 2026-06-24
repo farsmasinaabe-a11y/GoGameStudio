@@ -130,20 +130,9 @@ button:active{background:#444}
  <div id="learnContent" style="text-align:left;max-width:440px;margin:0 auto"></div>
 </div>
 
-<div id="debugLog" style="position:fixed;bottom:0;left:0;right:0;background:rgba(0,0,0,0.85);color:#0f0;font:10px monospace;padding:4px;max-height:30vh;overflow-y:auto;z-index:9999;white-space:pre-wrap">LOADED</div>
-
 <script>
 var tg=window.Telegram?Telegram.WebApp:null;
 if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide()}catch(e){}}
-window.onerror=function(m){alert('JS Error: '+m);return false;};
-
-var _log=[];
-function log(m){_log.push(new Date().toLocaleTimeString()+' '+m);if(_log.length>20)_log.shift();updateLog();}
-function updateLog(){
- var el=document.getElementById('debugLog');
- if(el)el.textContent=_log.join('\n');
-}
-log('Script started');
 
 var lang='en';
 var T={
@@ -247,7 +236,8 @@ function goMenuHTML(){
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
-var stoneObjects=[],aiTimer=0,playerColor=B,komi=6.5;
+var stoneObjects=[],aiTimer=0,playerColor=B;
+var currentRules=WGo.JAPANESE_RULES,komi=6.5;
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
@@ -258,7 +248,7 @@ function showScreen(id){
 }
 
 function openGoSettings(){
- document.getElementById('menu-go').innerHTML='<button class="btn-back" onclick="showScreen(\'menu-main\')">← Назад</button><h1>🀄️ Го</h1><div class="sub">Настройки</div><button class="btn-wide" onclick="startLearn()" style="margin-bottom:16px">📚 Обучение</button><label>Размер доски</label><select id="sizeSel"><option value="9" selected>9×9</option><option value="13">13×13</option><option value="19">19×19</option></select><label>Стиль доски</label><select id="boardStyle"><option value="wood" selected>Дерево</option><option value="bamboo">Бамбук</option></select><label>Стиль камней</label><select id="stoneStyle"><option value="glass" selected>Стеклянные</option></select><label>Подписи на доске</label><select id="coordStyle"><option value="1" selected>Да</option><option value="0">Нет</option></select><label>Режим игры</label><div class="tabs" id="modeTabs"><button class="active" data-mode="ai" onclick="switchGoMode(\'ai\')">🤖 ИИ</button><button data-mode="practice" onclick="switchGoMode(\'practice\')">🎯 Практика</button></div><div id="aiSettings"><label>Сложность ИИ</label><select id="levelSel"><option value="1">Новичок</option><option value="2" selected>Опытный</option><option value="3">Профессионал</option></select><label>Твой цвет</label><select id="colorSel"><option value="1" selected>⚫ Чёрные</option><option value="-1">⚪ Белые</option></select><label>Правила</label><select id="rulesSel"><option value="japanese" selected>Японские (коми 6.5)</option><option value="chinese">Китайские (коми 7.5)</option><option value="ing">ING (коми 7.5)</option><option value="free">Свободные (коми 0)</option></select></div><br><button class="btn-big btn-green" onclick="startGame()">🎮 Играть</button>';
+ document.getElementById('menu-go').innerHTML=goMenuHTML();
  showScreen('menu-go');
 }
 
@@ -275,9 +265,9 @@ function setPracticeColor(c){
  document.getElementById('pbWhite').classList.toggle('btn-active',c===W);
 }
 
-function initGame(sz,level,rules){
+function initGame(sz,level){
  size=sz;aiLevel=level;
- game=new WGo.Game(size,rules||WGo.JAPANESE_RULES);
+ game=new WGo.Game(size,currentRules);
  practiceColor=B;
  document.getElementById('pbBlack').classList.add('btn-active');
  document.getElementById('pbWhite').classList.remove('btn-active');
@@ -305,15 +295,9 @@ function refreshBoard(){
  stoneObjects=newStones;
 }
 
-function startLearn(){
- showLearnListRU();
-}
+function startLearn(){showLearnList();}
 
 function startGame(){
- document.body.style.background='#f00';
- log('WGo='+(typeof WGo));
- log('startGame mode='+mode);
- try{
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
@@ -321,9 +305,8 @@ function startGame(){
  var co=document.getElementById('coordStyle').value==='1';
  playerColor=parseInt(document.getElementById('colorSel').value);
  var rulesMap={japanese:WGo.JAPANESE_RULES,chinese:WGo.CHINESE_RULES,ing:WGo.ING_RULES,free:WGo.NO_RULES};
- var curRules=rulesMap[document.getElementById('rulesSel').value]||WGo.JAPANESE_RULES;
- komi=curRules.komi;
- initGame(sz,lv,curRules);
+ currentRules=rulesMap[document.getElementById('rulesSel').value]||WGo.JAPANESE_RULES;
+ komi=currentRules.komi;
 
  // remove old stones
  if(board){
@@ -335,7 +318,6 @@ function startGame(){
 
  var box=document.getElementById('boardBox');
  var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.6,600);
- log('maxW='+maxW+' innerW='+window.innerWidth);
 
  var styles={
   wood:{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531'},
@@ -347,21 +329,14 @@ function startGame(){
    grid:{linesColor:styles.line,starColor:styles.star},
    coordinates:{color:styles.coord,top:co,left:co,right:false,bottom:false}
   };
-   if(ss==='matte'){
-    theme.drawHandlers={B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()};
-   }
+  if(ss==='matte'){
+   theme.drawHandlers={B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()};
+  }
 
-   showScreen('game');
-   box.style.display='';
-   box.style.width=maxW+'px';
-   box.style.height=maxW+'px';
-   // force layout
-   var forceReflow=box.offsetWidth;
-
-   if(!board){
-    box.innerHTML='';
-    board=new WGo.SVGBoard(box,{size:size,width:maxW,height:maxW,theme:theme,coordinates:co});
-    setupBoardClick();
+  if(!board){
+   box.innerHTML='';
+   board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
+   setupBoardClick();
   }else{
    board.setSize(size);
    var t=board.config.theme;
@@ -377,9 +352,11 @@ function startGame(){
     t.drawHandlers.W=new WGo.MatteStoneWhite();
    }
    board.redraw();
-   }
-   log('boardBox size: '+box.offsetWidth+'x'+box.offsetHeight+' children:'+box.children.length);
-   gameActive=true;
+  }
+  box.style.display='';
+
+ showScreen('game');
+ gameActive=true;
  clearTimeout(aiTimer);
  if(mode==='ai'&&game.turn!==playerColor)aiTimer=setTimeout(aiMove,300);
  document.getElementById('result').style.display='none';
@@ -389,7 +366,6 @@ function startGame(){
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
  document.getElementById('btnUndo').style.display=(mode==='practice'?'none':'inline');
  updateInfo();
- }catch(e){log('ERROR startGame: '+e.message);}
 }
 
 function countStones(pos,color){
@@ -580,19 +556,28 @@ function setupBoardClick(){
  });
 }
 
-function showLearnListRU(){
+function showLearnList(){
  showScreen('screen-learn');
- var lessons=[
-  {t:'Правила Го',d:'Цель — окружить больше территории. Камни ставятся на пересечения.'},
-  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается.'},
-  {t:'Правило Ko',d:'Нельзя повторять позицию. Ответный захват запрещён.'},
+ var lessons=lang==='ru'?[
+  {t:'Правила Го',d:'Цель — окружить больше территории. Камни ставятся на пересечения. Группа живёт, пока имеет дыхания.'},
+  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается. Захваченные камни идут в копилку.'},
+  {t:'Правило Ko',d:'Нельзя повторять позицию. Ответный захват запрещён — нужно сначала сделать ход в другом месте.'},
   {t:'Самоубийство',d:'Нельзя ставить камень без дыханий, если он не захватывает вражеские камни.'},
   {t:'Глаза',d:'Два глаза делают группу неуязвимой. Один глаз — под угрозой.'},
   {t:'Подсчёт очков',d:'Территория + захваченные камни. Белые получают коми.'},
   {t:'Seki (Сэки)',d:'Взаимная жизнь — никто не может захватить без самоубийства.'}
+ ]:[
+  {t:'Rules of Go',d:'Surround more territory than your opponent. Stones are placed on intersections. A group lives as long as it has liberties.'},
+  {t:'Capturing Stones',d:'When a group runs out of liberties, it is removed from the board. Captured stones go to the prisoner pile.'},
+  {t:'Ko Rule',d:'You cannot repeat a previous board position. An immediate recapture is forbidden — play elsewhere first.'},
+  {t:'Suicide',d:'You cannot place a stone with no liberties unless it captures enemy stones in the process.'},
+  {t:'Eyes',d:'Two eyes make a group invulnerable. One eye — the group is under threat of capture.'},
+  {t:'Scoring',d:'Your score = territory + captured enemy stones. White receives komi as compensation for going second.'},
+  {t:'Seki',d:'Mutual life — neither side can capture without suicide. Points inside seki count for neither player.'}
  ];
- var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">← В меню</button>';
- html+='<h3 style="margin-bottom:12px">📚 Обучение</h3>';
+
+ var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">\u2190 '+(lang==='ru'?'В меню':'Back')+'</button>';
+ html+='<h3 style="margin-bottom:12px">\uD83D\uDCDA '+(lang==='ru'?'Обучение':'Learn')+'</h3>';
  for(var i=0;i<lessons.length;i++){
   html+='<div style="background:#1e1e3a;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="showLesson('+i+')">';
   html+='<b>'+(i+1)+'. '+lessons[i].t+'</b>';
@@ -601,9 +586,7 @@ function showLearnListRU(){
  }
  document.getElementById('learnContent').innerHTML=html;
 }
-
-function showLearnList(){
- showLearnListRU();
+ document.getElementById('learnContent').innerHTML=html;
 }
 
 var _lessonsFull={
