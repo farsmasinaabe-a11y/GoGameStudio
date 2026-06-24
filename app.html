@@ -35,7 +35,7 @@ button:active{background:#444}
 </style></head>
 <body>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://unpkg.com/wgo"></script>
+<script src="wgo.custom.js"></script>
 
 <div id="menu-main" class="menu-screen">
  <div class="game-card" onclick="openGoSettings()">
@@ -57,6 +57,11 @@ button:active{background:#444}
  <select id="boardStyle">
   <option value="wood" selected>Дерево</option>
   <option value="bamboo">Бамбук</option>
+ </select>
+ <label>Стиль камней</label>
+ <select id="stoneStyle">
+  <option value="glass" selected>Стеклянные</option>
+  <option value="matte">Матовые</option>
  </select>
  <label>Подписи на доске</label>
  <select id="coordStyle">
@@ -179,6 +184,7 @@ function startGame(){
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
+ var ss=document.getElementById('stoneStyle').value;
  var co=document.getElementById('coordStyle').value==='1';
  playerColor=parseInt(document.getElementById('colorSel').value);
  var rulesMap={japanese:WGo.JAPANESE_RULES,chinese:WGo.CHINESE_RULES,ing:WGo.ING_RULES,free:WGo.NO_RULES};
@@ -203,6 +209,10 @@ function startGame(){
    grid:{linesColor:styles.line,starColor:styles.star},
    coordinates:{color:styles.coord,top:co,left:co,right:false,bottom:false}
   };
+  if(ss==='matte'){
+   theme.drawHandlers={B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()};
+  }
+
   if(!board){
    box.innerHTML='';
    board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
@@ -216,6 +226,10 @@ function startGame(){
     t.coordinates.color=styles.coord;
     t.coordinates.top=co;t.coordinates.left=co;
     t.coordinates.right=false;t.coordinates.bottom=false;
+   }
+   if(ss==='matte'){
+    t.drawHandlers.B=new WGo.MatteStoneBlack();
+    t.drawHandlers.W=new WGo.MatteStoneWhite();
    }
    board.redraw();
   }
