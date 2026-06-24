@@ -68,9 +68,11 @@ button:active{background:#444}
   <option value="1" selected>Да</option>
   <option value="0">Нет</option>
  </select>
+ <br>
+ <button class="btn-wide" onclick="startLearn()" style="margin-bottom:16px">&#x1F4DA; Обучение</button>
+
  <label>Режим игры</label>
  <div class="tabs" id="modeTabs">
-  <button data-mode="learn" onclick="switchGoMode('learn')">&#x1F4DA; Обучение</button>
   <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; ИИ</button>
   <button data-mode="practice" onclick="switchGoMode('practice')">&#x1F3AF; Практика</button>
  </div>
@@ -182,8 +184,9 @@ function refreshBoard(){
  stoneObjects=newStones;
 }
 
+function startLearn(){showLearnList();}
+
 function startGame(){
- if(mode==='learn'){showLearnList();return;}
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
