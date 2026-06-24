@@ -310,8 +310,10 @@ function startLearn(){
 }
 
 function startGame(){
- try{
+ document.body.style.background='#f00';
+ log('WGo='+(typeof WGo));
  log('startGame mode='+mode);
+ try{
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
