@@ -108,7 +108,7 @@ button:active{background:#444}
  <div id="boardBox"></div>
  <div id="btns">
   <button id="btnPass" onclick="act('pass')">&#x23ED; Пас</button>
-  <button onclick="act('undo')">&#x21A9; Отмена</button>
+  <button id="btnUndo" onclick="act('undo')">&#x21A9; Отмена</button>
   <button class="btn-red" onclick="act('end')">&#x1F3C1; Конец</button>
  </div>
  <div id="result" style="display:none;margin:16px">
@@ -244,6 +244,7 @@ function startGame(){
  document.getElementById('info').style.display='';
  document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
+ document.getElementById('btnUndo').style.display=(mode==='practice'?'none':'inline');
  updateInfo();
 }
 
