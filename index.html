@@ -68,13 +68,11 @@ button:active{background:#444}
   <option value="1" selected>Да</option>
   <option value="0">Нет</option>
  </select>
- <br>
- <button class="btn-wide" onclick="startLearn()" style="margin-bottom:16px">&#x1F4DA; Обучение</button>
-
  <label>Режим игры</label>
  <div class="tabs" id="modeTabs">
   <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; ИИ</button>
   <button data-mode="practice" onclick="switchGoMode('practice')">&#x1F3AF; Практика</button>
+  <button data-mode="learn" onclick="switchGoMode('learn')">&#x1F4DA; Обучение</button>
  </div>
  <div id="aiSettings">
   <label>Сложность ИИ</label>
@@ -102,7 +100,7 @@ button:active{background:#444}
 
 <div id="game">
  <div id="info"></div>
- <div id="practiceBar">
+ <div id="learnList" style="display:none;margin-top:8px;text-align:left;max-width:400px"></div>
  <div id="practiceBar">
   <span style="font-size:13px;color:#aaa">Цвет:</span>
   <button id="pbBlack" class="btn-sm btn-active" onclick="setPracticeColor(1)">&#x26AB;</button>
@@ -122,24 +120,9 @@ button:active{background:#444}
  </div>
 </div>
 
-<div id="screen-learn" class="menu-screen" style="display:none">
- <div id="learnContent" style="text-align:left;max-width:440px;margin:0 auto"></div>
-</div>
-
-<div id="debugLog" style="position:fixed;top:0;left:0;right:0;background:#f00;color:#fff;font:14px monospace;padding:8px;z-index:99999">LOADED v2</div>
-
 <script>
 var tg=window.Telegram?Telegram.WebApp:null;
 if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide()}catch(e){}}
-window.onerror=function(m){alert('JS Error: '+m);};
-
-var _log=[];
-function log(m){_log.push(new Date().toLocaleTimeString()+' '+m);if(_log.length>20)_log.shift();updateLog();}
-function updateLog(){
- var el=document.getElementById('debugLog');
- if(el)el.textContent=_log.join('\n');
-}
-log('Script started');
 
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
@@ -151,7 +134,6 @@ function showScreen(id){
  document.getElementById('menu-main').style.display='none';
  document.getElementById('menu-go').style.display='none';
  document.getElementById('game').style.display='none';
- document.getElementById('screen-learn').style.display='none';
  document.getElementById(id).style.display=(id==='game'?'flex':'block');
 }
 
@@ -200,11 +182,8 @@ function refreshBoard(){
  stoneObjects=newStones;
 }
 
-function startLearn(){showLearnList();}
-
 function startGame(){
- log('startGame');
- try{
+ if(mode==='learn'){showLearnList();return;}
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
  var bs=document.getElementById('boardStyle').value;
@@ -273,8 +252,6 @@ function startGame(){
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
  document.getElementById('btnUndo').style.display=(mode==='practice'?'none':'inline');
  updateInfo();
- log('startGame done');
- }catch(e){log('ERROR startGame: '+e.message);}
 }
 
 function countStones(pos,color){
@@ -444,74 +421,49 @@ function setupBoardClick(){
 }
 
 function showLearnList(){
- showScreen('screen-learn');
+ showScreen('game');
+ document.getElementById('boardBox').style.display='none';
+ document.getElementById('btns').style.display='none';
+ document.getElementById('info').style.display='none';
+ document.getElementById('practiceBar').style.display='none';
+ document.getElementById('result').style.display='none';
+
  var lessons=[
-  {t:'Правила Го',d:'Цель — окружить больше территории. Камни ставятся на пересечения. Группа живёт, пока имеет дыхания.'},
-  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается. Захваченные камни идут в копилку.'},
-  {t:'Правило Ko',d:'Нельзя повторять позицию. Ответный захват запрещён — нужно сначала сделать ход в другом месте.'},
-  {t:'Самоубийство',d:'Нельзя ставить камень без дыханий, если он не захватывает вражеские камни.'},
-  {t:'Глаза',d:'Два глаза делают группу неуязвимой. Один глаз — под угрозой.'},
-  {t:'Подсчёт очков',d:'Территория + захваченные камни. Белые получают коми.'},
-  {t:'Seki (Сэки)',d:'Взаимная жизнь — никто не может захватить без самоубийства.'}
+  {t:'Правила Го',d:'Цель — окружить больше территории, чем соперник. Камни ставятся на пересечения. Группа камней живёт, пока имеет дыхания.'},
+  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается с доски. Захваченные камни идут в копилку.'},
+  {t:'Правило Ko',d:'Запрещено повторять предыдущую позицию. Нельзя сразу же ответным ходом вернуть позицию, которая была до хода соперника.'},
+  {t:'Самоубийство',d:'Нельзя ставить камень в точку, где у него не будет дыханий, если только этот ход не захватывает камни соперника.'},
+  {t:'Глаза',d:'Группа с двумя глазами неуязвима — её невозможно захватить. Строй два глаза для защиты.'},
+  {t:'Подсчёт очков',d:'Очки = твоя территория + захваченные камни соперника. Белые получают коми как компенсацию за второй ход.'},
+  {t:'Seki (Сэки)',d:'Взаимная жизнь — позиция, где никто не может захватить другого без самоубийства. Очки в сэки не считаются.'}
  ];
 
- var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">\u2190 В меню</button>';
- html+='<h3 style="margin-bottom:12px">\uD83D\uDCDA Обучение</h3>';
+ var html='<h3 style="margin-bottom:12px">\uD83D\uDCDA Обучение</h3>';
  for(var i=0;i<lessons.length;i++){
   html+='<div style="background:#1e1e3a;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="showLesson('+i+')">';
-  html+='<b>'+(i+1)+'. '+lessons[i].t+'</b>';
+  html+='<b>'+lessons[i].t+'</b>';
   html+='<p style="font-size:12px;color:#888;margin-top:4px">'+lessons[i].d+'</p>';
   html+='</div>';
  }
- document.getElementById('learnContent').innerHTML=html;
+ document.getElementById('learnList').innerHTML=html;
+ document.getElementById('learnList').style.display='block';
 }
 
 var _lessonsFull=[
- {t:'Правила Го',d:'Камни ставятся на пересечения линий (точки). Группа — это соединённые камни одного цвета. У каждой группы есть дыхания — свободные соседние точки. Группа живёт, пока есть хотя бы одно дыхание.',stones:[
-  [2,2,B],[3,2,B],[2,3,B],[3,3,B],[6,2,W],[7,2,W],[6,3,W],[7,3,W],[4,6,B],[5,6,B],[4,7,W],[5,7,W]
- ]},
- {t:'Захват камней',d:'Белый камень ○ в углу окружён чёрными ●. У него осталось 1 дыхание — точка A. Если чёрные поставят камень в A, белый будет захвачен и снят с доски. Захваченные камни идут в копилку соперника.',stones:[
-  [0,0,W],[1,0,B],[0,1,B]
- ]},
- {t:'Правило Ko',d:'Чёрные только что захватили белый камень ▲ ходом в A. Белые НЕ могут сразу ответить в B — это повторит предыдущую позицию. Сначала нужно сделать ход в другом месте, и только потом можно вернуться.',stones:[
-  [0,0,W],[1,0,B],[0,1,B],[2,0,B],[2,1,W],[0,2,W],[1,2,B]
- ]},
- {t:'Самоубийство',d:'Точка A — самоубийство для белых: камень окажется полностью окружён без дыханий. Но ход белых в точку B разрешён — он захватит два чёрных камня ● и даст дыхания новому белому камню.',stones:[
-  [1,1,B],[2,1,B],[0,2,W],[1,2,W],[2,2,E],[3,2,B],[2,3,E]
- ]},
- {t:'Глаза',d:'У чёрной группы в углу два глаза — точки A и B. Белые не могут занять их одновременно (нужно два хода подряд). Пока у группы два отдельных глаза — она неуязвима. Один глаз — группа под угрозой захвата.',stones:[
-  [0,0,B],[1,0,B],[0,1,B],[2,0,B],[2,1,B],[0,2,B],[1,2,B],[2,2,B],[1,1,E],[3,0,B],[3,1,B],[3,2,B],[4,0,W],[4,1,W],[4,2,W]
- ]},
- {t:'Подсчёт очков',d:'Чёрные ● окружили левый нижний угол (территория = пустые точки внутри). Белые ○ — правый верхний. В японских правилах: очки = территория + захваченные камни соперника. Белые получают коми 6.5.',stones:[
-  [0,0,B],[1,0,B],[2,0,B],[3,0,W],[4,0,W],[0,1,B],[1,1,B],[2,1,B],[3,1,W],[4,1,W],[0,2,B],[1,2,B],[2,2,B],[3,2,E],[4,2,W],[0,3,B],[1,3,B],[2,3,B],[3,3,E],[4,3,W],[2,4,B],[3,4,E],[4,4,W],[2,5,B],[3,5,W],[4,5,W],[0,6,B],[1,6,B],[2,6,B],[3,6,W],[4,6,W],[0,7,B],[1,7,B],[2,7,B],[3,7,W],[4,7,W]
- ]},
- {t:'Seki (Сэки)',d:'В центре чёрные ● и белые ○ камни не имеют двух глаз. Но никто не может захватить другого — любой ход внутрь будет самоубийством. Это сэки (взаимная жизнь). Точки внутри не считаются ничьей территорией.',stones:[
-  [2,2,B],[3,2,W],[2,3,B],[3,3,W],[1,3,B],[4,3,W],[2,1,B],[3,1,W],[2,4,B],[3,4,W],[1,2,B],[4,2,W],[1,4,B],[4,4,W]
- ]}
+ {t:'Правила Го',d:'Цель игры — окружить больше территории, чем соперник. Камни ставятся на пересечения линий. Группа камней живёт, пока имеет дыхания (свободные соседние точки). Игра заканчивается, когда оба игрока пасуют подряд.'},
+ {t:'Захват камней',d:'Если у группы камней не осталось дыханий — она снимается с доски. Это называется захватом. Захваченные камни идут в копилку и учитываются при финальном подсчёте очков.'},
+ {t:'Правило Ko',d:'Запрещено повторять предыдущую позицию. Нельзя сразу же ответным ходом вернуть позицию, которая была до хода соперника. Это предотвращает бесконечные циклы захвата.'},
+ {t:'Самоубийство',d:'Нельзя ставить камень в точку, где у него не будет дыханий, если только этот ход не захватывает камни соперника. Ход, снимающий вражеские камни и дающий дыхания — разрешён.'},
+ {t:'Глаза',d:'Группа с двумя глазами (отдельными внутренними пустотами) неуязвима — её невозможно захватить. Строй два глаза для защиты своих групп. Один глаз — группа под угрозой.'},
+ {t:'Подсчёт очков',d:'В конце игры: твои очки = твоя территория (пустые точки, окружённые только твоими камнями) + захваченные камни соперника. Белые получают коми 6.5 как компенсацию за второй ход.'},
+ {t:'Seki (Сэки)',d:'Взаимная жизнь — позиция, где группы обоих цветов не имеют двух глаз, но ни одна сторона не может захватить другую без самоубийства. Точки в сэки не считаются ничьей территорией.'}
 ];
 
 function showLesson(i){
  var l=_lessonsFull[i];
- var html='<button class="btn-back" onclick="showLearnList()" style="position:static;margin-bottom:12px">\u2190 К урокам</button>';
- html+='<h3>'+(i+1)+'. '+l.t+'</h3>';
- html+='<p style="margin-top:12px;line-height:1.6;color:#ccc;margin-bottom:16px">'+l.d+'</p>';
- if(l.stones&&l.stones.length){
-  html+='<div id="lessonBoard" style="display:inline-block;margin:0 auto"></div>';
- }
- document.getElementById('learnContent').innerHTML=html;
- if(l.stones&&l.stones.length){
-  setTimeout(function(){
-   var lb=document.getElementById('lessonBoard');
-   if(!lb)return;
-   var sz=l.stones.some(function(s){return s[0]>8||s[1]>8;})?19:9;
-   var g=new WGo.Game(sz,WGo.NO_RULES);
-   l.stones.forEach(function(s){g.setStone(s[0],s[1],s[2]);});
-   var b=new WGo.SVGBoard(lb,{size:sz,width:Math.min(320,window.innerWidth*0.85),coordinates:false});
-   for(var x=0;x<sz;x++)for(var y=0;y<sz;y++){
-    var c=g.position.get(x,y);
-    if(c!==E)b.addObject(new WGo.FieldBoardObject(c===B?'B':'W',x,y));
-   }
-  },100);
- }
+ var html='<h3>'+l.t+'</h3>';
+ html+='<p style="margin-top:12px;line-height:1.6;color:#ccc">'+l.d+'</p>';
+ html+='<br><button class="btn-back" onclick="showLearnList()" style="position:static">\u2190 Назад к урокам</button>';
+ document.getElementById('learnList').innerHTML=html;
 }
 </script></body></html>
