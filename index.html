@@ -285,6 +285,32 @@ function aiEvaluate(x,y){
  return captured*10+(aiLevel>=2?posBonus(x,y):0);
 }
 
+function countAtari(pos,color){
+ var vis={},cnt=0;
+ for(var i=0;i<pos.grid.length;i++){
+  if(pos.grid[i]!==color)continue;
+  var x=Math.floor(i/pos.size),y=i%pos.size;
+  var k=x+','+y;if(vis[k])continue;
+  // flood-fill group and count liberties
+  var stk=[[x,y]],cells=[],libs=0,grpVis={};
+  while(stk.length){
+   var p=stk.pop(),kr=p[0]+','+p[1];
+   if(grpVis[kr])continue;grpVis[kr]=true;cells.push(kr);
+   var nb=[[p[0]-1,p[1]],[p[0]+1,p[1]],[p[0],p[1]-1],[p[0],p[1]+1]];
+   for(var j=0;j<nb.length;j++){
+    var nx=nb[j][0],ny=nb[j][1];
+    if(nx<0||nx>=pos.size||ny<0||ny>=pos.size)continue;
+    var v=pos.get(nx,ny);
+    if(v===E)libs++;
+    else if(v===color&&!grpVis[nx+','+ny])stk.push([nx,ny]);
+   }
+  }
+  for(var j=0;j<cells.length;j++)vis[cells[j]]=true;
+  if(libs===1)cnt++;
+ }
+ return cnt;
+}
+
 function aiMove(){
  if(!gameActive||mode!=='ai'||game.turn!==-playerColor)return;
  var aiColor=-playerColor;
@@ -296,7 +322,10 @@ function aiMove(){
   var curBl=countStones(game.position,B);
   var newBl=countStones(result,B);
   var captured=curBl-newBl;
-  var sc=captured*10+posBonus(x,y);
+   var sc=captured*10+posBonus(x,y);
+   // penalty for leaving own groups in atari (1 liberty)
+   var atariCnt=countAtari(result,aiColor);
+   sc-=atariCnt*15;
   if(aiLevel===3){
    var oppBest=0;
    game.pushPosition(result);
