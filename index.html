@@ -4,7 +4,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#1a1a2e;color:#eee;font-family:system-ui;text-align:center;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:8px;user-select:none}
-canvas{border-radius:6px;box-shadow:0 4px 20px #000;max-width:min(96vw,96vh,600px);cursor:pointer;touch-action:manipulation;display:block;margin:0 auto}
+canvas{border-radius:6px;box-shadow:0 4px 20px #000;cursor:pointer;touch-action:manipulation;display:block;margin:0 auto}
 #game{display:none;flex-direction:column;align-items:center}
 #btns{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;justify-content:center}
 button{background:#2a2a4a;color:#ddd;border:1px solid #444;padding:8px 14px;border-radius:8px;font-size:14px;cursor:pointer;min-width:48px;transition:background .15s}
@@ -257,13 +257,14 @@ function endGame(){
 }
 
 // ---- Board Rendering ----
-var hover=null;
+var hover=null,gMARGIN=24,gCELL=51;
 
 function render(){
  var cv=document.getElementById('cv');
- var MARGIN=24,CELL=Math.max(22,Math.floor(460/size));
- var W=MARGIN*2+CELL*(size-1);
- cv.width=W;cv.height=W;
+ var maxW=Math.min(window.innerWidth*0.96, window.innerHeight*0.96, 600);
+ gCELL=Math.max(22,Math.floor((maxW-2*gMARGIN)/(size-1)));
+ var W=gMARGIN*2+gCELL*(size-1);
+ cv.width=W;cv.height=W;cv.style.width=W+'px';cv.style.height=W+'px';
  var ctx=cv.getContext('2d');
 
  var woodGrad=ctx.createLinearGradient(0,0,W,W);
@@ -276,29 +277,29 @@ function render(){
 
  ctx.strokeStyle='#5C3A1E';ctx.lineWidth=1.2;
  for(var i=0;i<size;i++){
-  var pos=MARGIN+i*CELL;
-  ctx.beginPath();ctx.moveTo(pos,MARGIN);ctx.lineTo(pos,MARGIN+(size-1)*CELL);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(MARGIN,pos);ctx.lineTo(MARGIN+(size-1)*CELL,pos);ctx.stroke();
+  var pos=gMARGIN+i*gCELL;
+  ctx.beginPath();ctx.moveTo(pos,gMARGIN);ctx.lineTo(pos,gMARGIN+(size-1)*gCELL);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(gMARGIN,pos);ctx.lineTo(gMARGIN+(size-1)*gCELL,pos);ctx.stroke();
  }
 
  var stars=size===9?[[3,3],[3,7],[5,5],[7,3],[7,7]]:
            size===13?[[3,3],[3,7],[3,11],[7,3],[7,7],[7,11],[11,3],[11,7],[11,11]]:
            size===19?[[4,4],[4,10],[4,16],[10,4],[10,10],[10,16],[16,4],[16,10],[16,16]]:[];
  for(var i=0;i<stars.length;i++){
-  var sx=MARGIN+(stars[i][1]-1)*CELL,sy=MARGIN+(stars[i][0]-1)*CELL;
+  var sx=gMARGIN+(stars[i][1]-1)*gCELL,sy=gMARGIN+(stars[i][0]-1)*gCELL;
   ctx.fillStyle='#3A2210';ctx.beginPath();ctx.arc(sx,sy,3.5,0,2*Math.PI);ctx.fill();
  }
 
  if(hover){
-  var hx=MARGIN+hover.c*CELL,hy=MARGIN+hover.r*CELL;
+  var hx=gMARGIN+hover.c*gCELL,hy=gMARGIN+hover.r*gCELL;
   ctx.fillStyle='rgba(255,255,255,0.2)';
-  ctx.beginPath();ctx.arc(hx,hy,CELL/2-1,0,2*Math.PI);ctx.fill();
+  ctx.beginPath();ctx.arc(hx,hy,gCELL/2-1,0,2*Math.PI);ctx.fill();
  }
 
- var R=CELL/2-2.5,pos=game.position;
+ var R=gCELL/2-2.5,pos=game.position;
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   var v=pos.get(x,y);if(v===E)continue;
-  var cx=MARGIN+x*CELL,cy=MARGIN+y*CELL;
+  var cx=gMARGIN+x*gCELL,cy=gMARGIN+y*gCELL;
   ctx.beginPath();ctx.arc(cx+2,cy+2,R,0,2*Math.PI);
   ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fill();
   var grad=ctx.createRadialGradient(cx-R*0.35,cy-R*0.35,R*0.1,cx,cy,R*1.1);
@@ -310,21 +311,22 @@ function render(){
  }
 
  if(hist.length){
-  var last=hist[hist.length-1],lx=MARGIN+last.x*CELL,ly=MARGIN+last.y*CELL;
+  var last=hist[hist.length-1],lx=gMARGIN+last.x*gCELL,ly=gMARGIN+last.y*gCELL;
   ctx.beginPath();ctx.arc(lx,ly,4,0,2*Math.PI);
   ctx.fillStyle=last.color===W?'#222':'#fff';ctx.fill();
  }
 }
 
 function getCell(e){
- var rect=cv.getBoundingClientRect();
- var cssMARGIN=24*rect.width/cv.width;
- var cssCELL=(rect.width-2*cssMARGIN)/(size-1);
- var cx=e.clientX-rect.left,cy=e.clientY-rect.top;
- var t=e.changedTouches&&e.changedTouches[0];
- if(t){cx=t.clientX-rect.left;cy=t.clientY-rect.top}
- var col=Math.round((cx-cssMARGIN)/cssCELL);
- var row=Math.round((cy-cssMARGIN)/cssCELL);
+ var x=e.offsetX,y=e.offsetY;
+ if(x===undefined){
+  var rect=cv.getBoundingClientRect();
+  var t=(e.changedTouches&&e.changedTouches[0])||(e.touches&&e.touches[0]);
+  x=(t?t.clientX:e.clientX)-rect.left;
+  y=(t?t.clientY:e.clientY)-rect.top;
+ }
+ var col=Math.round((x-gMARGIN)/gCELL);
+ var row=Math.round((y-gMARGIN)/gCELL);
  return(col>=0&&col<size&&row>=0&&row<size)?{c:col,r:row}:null;
 }
 
