@@ -343,7 +343,10 @@ function act(a){
   hist.push(null);
  }else if(a==='undo'){
   if(!hist.length)return;
-  hist.pop();game.popPosition();
+  var last=hist.pop();game.popPosition();
+  if(mode==='ai'&&last&&last.color===-playerColor&&hist.length){
+   hist.pop();game.popPosition();
+  }
   passed=false;undoUsed=true;
   refreshBoard();
  }else if(a==='clear'){
