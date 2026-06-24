@@ -28,6 +28,8 @@ button:active{background:#444}
 .tabs button{background:#1e1e3a;border:none;border-radius:0;padding:8px 16px;font-size:13px;min-width:0}
 .tabs button.active{background:#2a2a4a;color:#fff}
 #practiceBar{display:none;gap:8px;justify-content:center;align-items:center;margin:4px 0}
+#sgfBar{display:none;gap:4px;justify-content:center;align-items:center;margin:4px 0;flex-wrap:wrap}
+#sgfTxt{width:240px;font-size:11px;padding:4px;background:#1a1a2e;color:#ddd;border:1px solid #444;border-radius:4px;font-family:monospace}
 #info{font-size:12px;color:#aaa;margin:2px 0;min-height:18px}
 </style></head>
 <body>
@@ -53,6 +55,22 @@ button:active{background:#444}
   <option value="13">13&#xD7;13</option>
   <option value="19">19&#xD7;19</option>
  </select>
+ <label>Доска</label>
+ <select id="boardStyle">
+  <option value="wood" selected>Дерево</option>
+  <option value="dark">Тёмная</option>
+  <option value="bamboo">Бамбук</option>
+ </select>
+ <label>Камни</label>
+ <select id="stoneStyle">
+  <option value="glass" selected>Стеклянные</option>
+  <option value="flat">Плоские</option>
+ </select>
+ <label>Подписи</label>
+ <select id="coordStyle">
+  <option value="1" selected>Да</option>
+  <option value="0">Нет</option>
+ </select>
  <label>Режим</label>
  <div class="tabs" id="modeTabs">
   <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; Игра с ИИ</button>
@@ -73,16 +91,23 @@ button:active{background:#444}
 <div id="game">
  <div id="info"></div>
  <div id="practiceBar">
-  <span style="font-size:13px;color:#aaa">Твой цвет:</span>
+  <span style="font-size:13px;color:#aaa">Цвет:</span>
   <button id="pbBlack" class="btn-sm btn-active" onclick="setPracticeColor(1)">&#x26AB;</button>
   <button id="pbWhite" class="btn-sm" onclick="setPracticeColor(-1)">&#x26AA;</button>
+  <button class="btn-sm" onclick="act('clear')" style="background:#5a3030">&#x1F5D1;</button>
  </div>
  <div id="boardBox"></div>
  <div id="btns">
   <button id="btnPass" onclick="act('pass')">&#x23ED; Пас</button>
   <button onclick="act('undo')">&#x21A9; Отмена</button>
   <button onclick="act('score')">&#x1F4CA; Счёт</button>
+  <button onclick="act('sgf')">&#x1F4BE;</button>
   <button class="btn-red" onclick="act('end')">&#x1F3C1; Конец</button>
+ </div>
+ <div id="sgfBar">
+  <input id="sgfTxt" placeholder="SGF запись партии...">
+  <button class="btn-sm" onclick="act('sgfLoad')">&#x1F4E5;</button>
+  <button class="btn-sm btn-red" onclick="act('sgfClear')">&#x1F5D1;</button>
  </div>
 </div>
 
@@ -93,7 +118,8 @@ if(tg){try{tg.ready()}catch(e){}try{tg.expand()}catch(e){}try{tg.MainButton.hide
 var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false;
-var stoneObjects=[];
+var stoneObjects=[],sgfVisible=false;
+var COL='ABCDEFGHJKLMNOPQRSTUVWXYZ';
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
@@ -126,14 +152,14 @@ function initGame(sz,level){
  hist=[];passed=false;undoUsed=false;stoneObjects=[];
 }
 
-function updateBoard(){
+function refreshBoard(){
  var pos=game.position;
  var newStones=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   var c=pos.get(x,y);
   if(c===E)continue;
-  var existing=stoneObjects.find(function(o){return o.x===x&&o.y===y&&o.color===c;});
-  if(existing){newStones.push(existing);continue}
+  var ex=stoneObjects.find(function(o){return o.x===x&&o.y===y&&o.color===c;});
+  if(ex){newStones.push(ex);continue}
   var obj=new WGo.FieldBoardObject(c===B?'B':'W',x,y);
   board.addObject(obj);
   obj.color=c;
@@ -148,29 +174,55 @@ function updateBoard(){
 function startGame(){
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
+ var bs=document.getElementById('boardStyle').value;
+ var ss=document.getElementById('stoneStyle').value;
+ var co=document.getElementById('coordStyle').value==='1';
  initGame(sz,lv);
 
  var box=document.getElementById('boardBox');
  box.innerHTML='';
- var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.65,600);
- board=new WGo.SVGBoard(box,{size:size,width:maxW,coordinates:false});
- board.setSize(size);
+ var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.6,600);
+
+ var styles={
+  wood:{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531'},
+  dark:{bg:'#6B4E1F',line:'#3D2B0F',star:'#2A1A08',coord:'#A08060'},
+  bamboo:{bg:'#D4C878',line:'#8B7D4A',star:'#5C4A20',coord:'#5C4A20'}
+ }[bs];
+
+ var theme={
+  backgroundColor:styles.bg,
+  grid:{linesColor:styles.line,starColor:styles.star},
+  coordinates:{color:styles.coord,top:co,right:co,bottom:co,left:co}
+ };
+ if(ss==='flat')theme.drawHandlers={B:new WGo.SVGStoneDrawHandler(),W:new WGo.SVGStoneDrawHandler()};
+
+ board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
 
  board.on('click',function(evt,point){
   if(!point)return;
+  if(mode==='practice'){
+   var cur=game.position.get(point.x,point.y);
+   if(cur===E){
+    game.addStone(point.x,point.y,practiceColor);
+   }else{
+    game.removeStone(point.x,point.y);
+   }
+   game.validatePosition();
+   refreshBoard();updateInfo();
+   return;
+  }
   if(mode==='ai'&&game.turn!==B)return;
-  var color=mode==='practice'?practiceColor:B;
   if(!game.play(point.x,point.y))return;
-  hist.push({x:point.x,y:point.y,color:color});
+  hist.push({x:point.x,y:point.y,color:B});
   passed=false;undoUsed=false;
-  updateBoard();
-  updateInfo();
+  refreshBoard();updateInfo();
   if(mode==='ai')setTimeout(aiMove,200);
  });
 
  showScreen('game');
  document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
+ sgfVisible=false;document.getElementById('sgfBar').style.display='none';
  updateInfo();
 }
 
@@ -210,7 +262,7 @@ function aiMove(){
    var rm=all[Math.floor(Math.random()*all.length)];
    game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:W});
    passed=false;undoUsed=false;
-   updateBoard();updateInfo();return;
+   refreshBoard();updateInfo();return;
   }
  }
  if(!all.length){act('pass');return}
@@ -220,7 +272,7 @@ function aiMove(){
  var m=best[Math.floor(Math.random()*best.length)];
  game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:W});
  passed=false;undoUsed=false;
- updateBoard();updateInfo();
+ refreshBoard();updateInfo();
 }
 
 function flod(r,c){
@@ -258,7 +310,34 @@ function calcScore(){
 
 function updateInfo(){
  var sc=calcScore();
- document.getElementById('info').textContent='\u26AB '+sc[B]+':'+sc[W]+' \u26AA \u0425\u043e\u0434 '+(hist.length+1);
+ var bscore=sc[B];
+ var wscore=sc[W]+6.5;
+ document.getElementById('info').textContent='\u26AB '+bscore.toFixed(1)+' : '+wscore.toFixed(1)+' \u26AA (коми 6.5) \u0425\u043e\u0434 '+(hist.length+1);
+}
+
+function exportSGF(){
+ var s='(;GM[1]SZ['+size+']KM[6.5]';
+ for(var i=0;i<hist.length;i++){
+  var m=hist[i];
+  if(!m){s+=';B[]';continue}
+  var col=COL.charAt(m.x),row=COL.charAt(m.y);
+  s+=';'+(m.color===B?'B':'W')+'['+col+row+']';
+ }
+ s+=')';
+ return s;
+}
+
+function importSGF(sgf){
+ var re=/;[BW]\[([a-z]{2})\]/g;
+ var m;
+ while((m=re.exec(sgf))!==null){
+  var col=COL.indexOf(m[1][0].toUpperCase());
+  var row=COL.indexOf(m[1][1].toUpperCase());
+  if(col>=0&&col<size&&row>=0&&row<size){
+   game.play(col,row);
+  }
+ }
+ refreshBoard();updateInfo();
 }
 
 function act(a){
@@ -270,10 +349,23 @@ function act(a){
   if(!hist.length)return;
   hist.pop();game.popPosition();
   passed=false;undoUsed=true;
-  updateBoard();
+  refreshBoard();
  }else if(a==='score'){
   var sc=calcScore();
-  alert('\u26AB '+sc[B]+' : '+sc[W]+' \u26AA');
+  alert('\u26AB '+sc[B].toFixed(1)+' : '+(sc[W]+6.5).toFixed(1)+' \u26AA (\u043a\u043e\u043c\u0438 6.5)');
+ }else if(a==='sgf'){
+  sgfVisible=!sgfVisible;
+  document.getElementById('sgfBar').style.display=sgfVisible?'flex':'none';
+  if(sgfVisible)document.getElementById('sgfTxt').value=exportSGF();
+ }else if(a==='sgfLoad'){
+  importSGF(document.getElementById('sgfTxt').value);
+ }else if(a==='sgfClear'){
+  initGame(size,aiLevel);
+  refreshBoard();updateInfo();
+  document.getElementById('sgfTxt').value='';
+ }else if(a==='clear'){
+  initGame(size,aiLevel);
+  refreshBoard();updateInfo();
  }else if(a==='end'){endGame();return}
  updateInfo();
  if(mode==='ai')setTimeout(aiMove,200);
@@ -282,7 +374,7 @@ function act(a){
 function endGame(){
  var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
  if(tg){tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}))}
- else{alert('\uD83C\uDFC1 \u0418\u0433\u0440\u0430 \u043e\u043a\u043e\u043d\u0447\u0435\u043d\u0430!\n\u26AB '+s[B]+' : '+s[W]+' \u26AA\n'+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!')}
+ else{alert('\uD83C\uDFC1 \u0418\u0433\u0440\u0430 \u043e\u043a\u043e\u043d\u0447\u0435\u043d\u0430!\n\u26AB '+s[B].toFixed(1)+' : '+(s[W]+6.5).toFixed(1)+' \u26AA (\u043a\u043e\u043c\u0438 6.5)\n'+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!')}
  showScreen('menu-go');
 }
 </script></body></html>
