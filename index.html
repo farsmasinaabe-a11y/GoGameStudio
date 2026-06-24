@@ -491,9 +491,10 @@ function showLesson(i){
    var lb=document.getElementById('lessonBoard');if(!lb)return;
    var sz=l.s.some(function(s){return s[0]>8||s[1]>8;})?19:9;
    var w=Math.min(300,window.innerWidth*0.8);
+   var theme={drawHandlers:{B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()}};
    var g=new WGo.Game(sz,WGo.NO_RULES);
    l.s.forEach(function(s){g.setStone(s[0],s[1],s[2]);});
-   var b=new WGo.SVGBoard(lb,{size:sz,width:w,coordinates:false});
+   var b=new WGo.SVGBoard(lb,{size:sz,width:w,theme:theme,coordinates:false});
    for(var x=0;x<sz;x++)for(var y=0;y<sz;y++){
     var c=g.position.get(x,y);if(c===E)continue;
     b.addObject(new WGo.FieldBoardObject(c===B?'B':'W',x,y));
