@@ -357,8 +357,7 @@ function startGame(){
 
    if(!board){
     box.innerHTML='';
-    board=new WGo.SVGBoard(box,{size:size,width:maxW,coordinates:co});
-    board.svgElement.style.height=maxW+'px';
+    board=new WGo.SVGBoard(box,{size:size,width:maxW,height:maxW,theme:theme,coordinates:co});
     setupBoardClick();
   }else{
    board.setSize(size);
