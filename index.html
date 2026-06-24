@@ -318,16 +318,15 @@ function updateInfo(){
 }
 
 function makeMatteStone(color){
- var NS='http://www.w3.org/2000/svg';
  return{
   createElement:function(config,addDef){
-   var g=document.createElementNS(NS,'g');
-   var s=document.createElementNS(NS,'circle');
-   s.setAttribute('cx','0');s.setAttribute('cy','0');
-   s.setAttribute('fill',color);s.setAttribute('r',config.theme.stoneSize);
-   g.appendChild(s);
-   var r={};r[WGo.SVG_OBJECTS]=g;r[WGo.SVG_SHADOWS]=null;
-   return r;
+   var stone=document.createElementNS(WGo.SVG_NS,'circle');
+   stone.setAttribute('cx','0');stone.setAttribute('cy','0');
+   stone.setAttribute('fill',color);stone.setAttribute('r',config.theme.stoneSize);
+   var group=document.createElementNS(WGo.SVG_NS,'g');
+   group.appendChild(stone);
+   var res={};res[WGo.SVG_OBJECTS]=group;res[WGo.SVG_SHADOWS]=null;
+   return res;
   }
  };
 }
