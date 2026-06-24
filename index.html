@@ -92,7 +92,6 @@ button:active{background:#444}
   <select id="rulesSel">
    <option value="japanese" selected>Японские (коми 6.5)</option>
    <option value="chinese">Китайские (коми 7.5)</option>
-   <option value="ing">ING (коми 7.5)</option>
    <option value="free">Свободные (коми 0)</option>
   </select>
  </div>
@@ -198,7 +197,7 @@ function startGame(){
  var ss=document.getElementById('stoneStyle').value;
  var co=document.getElementById('coordStyle').value==='1';
  playerColor=parseInt(document.getElementById('colorSel').value);
- var rulesMap={japanese:WGo.JAPANESE_RULES,chinese:WGo.CHINESE_RULES,ing:WGo.ING_RULES,free:WGo.NO_RULES};
+ var rulesMap={japanese:WGo.JAPANESE_RULES,chinese:WGo.CHINESE_RULES,free:WGo.NO_RULES};
  var curRules=rulesMap[document.getElementById('rulesSel').value]||WGo.JAPANESE_RULES;
  komi=curRules.komi;
  initGame(sz,lv,curRules);
