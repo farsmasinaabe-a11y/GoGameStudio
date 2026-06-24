@@ -212,6 +212,10 @@ function startGame(){
  showScreen('game');
  gameActive=true;
  clearTimeout(aiTimer);
+ document.getElementById('result').style.display='none';
+ document.getElementById('boardBox').style.display='';
+ document.getElementById('btns').style.display='';
+ document.getElementById('info').style.display='';
  document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
  document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
  sgfVisible=false;document.getElementById('sgfBar').style.display='none';
