@@ -344,11 +344,14 @@ function startGame(){
    grid:{linesColor:styles.line,starColor:styles.star},
    coordinates:{color:styles.coord,top:co,left:co,right:false,bottom:false}
   };
-  if(ss==='matte'){
-   theme.drawHandlers={B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()};
-  }
+   if(ss==='matte'){
+    theme.drawHandlers={B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()};
+   }
 
-  if(!board){
+   showScreen('game');
+   box.style.display='';
+
+   if(!board){
    box.innerHTML='';
    board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
    setupBoardClick();
@@ -367,11 +370,8 @@ function startGame(){
     t.drawHandlers.W=new WGo.MatteStoneWhite();
    }
    board.redraw();
-  }
-  box.style.display='';
-
- showScreen('game');
- gameActive=true;
+   }
+   gameActive=true;
  clearTimeout(aiTimer);
  if(mode==='ai'&&game.turn!==playerColor)aiTimer=setTimeout(aiMove,300);
  document.getElementById('result').style.display='none';
