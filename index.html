@@ -103,7 +103,6 @@ button:active{background:#444}
  <div id="btns">
   <button id="btnPass" onclick="act('pass')">&#x23ED; Пас</button>
   <button onclick="act('undo')">&#x21A9; Отмена</button>
-  <button onclick="act('score')">&#x1F4CA; Счёт</button>
   <button onclick="act('sgf')">&#x1F4BE;</button>
   <button class="btn-red" onclick="act('end')">&#x1F3C1; Конец</button>
  </div>
@@ -350,9 +349,6 @@ function act(a){
   hist.pop();game.popPosition();
   passed=false;undoUsed=true;
   refreshBoard();
- }else if(a==='score'){
-  var sc=calcScore();
-  alert('\u26AB '+sc[B].toFixed(1)+' : '+(sc[W]+6.5).toFixed(1)+' \u26AA (\u043a\u043e\u043c\u0438 6.5)');
  }else if(a==='sgf'){
   sgfVisible=!sgfVisible;
   document.getElementById('sgfBar').style.display=sgfVisible?'flex':'none';
