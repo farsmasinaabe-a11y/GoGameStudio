@@ -68,11 +68,13 @@ button:active{background:#444}
   <option value="1" selected>Да</option>
   <option value="0">Нет</option>
  </select>
+ <br>
+ <button class="btn-wide" onclick="startLearn()" style="margin-bottom:12px">&#x1F4DA; Обучение</button>
+
  <label>Режим игры</label>
  <div class="tabs" id="modeTabs">
   <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; ИИ</button>
   <button data-mode="practice" onclick="switchGoMode('practice')">&#x1F3AF; Практика</button>
-  <button data-mode="learn" onclick="switchGoMode('learn')">&#x1F4DA; Обучение</button>
  </div>
  <div id="aiSettings">
   <label>Сложность ИИ</label>
@@ -184,6 +186,8 @@ function refreshBoard(){
  }
  stoneObjects=newStones;
 }
+
+function startLearn(){showLearnList();}
 
 function startGame(){
  if(mode==='learn'){showLearnList();return;}
@@ -486,10 +490,14 @@ function showLesson(i){
   setTimeout(function(){
    var lb=document.getElementById('lessonBoard');if(!lb)return;
    var sz=l.s.some(function(s){return s[0]>8||s[1]>8;})?19:9;
+   var w=Math.min(300,window.innerWidth*0.8);
    var g=new WGo.Game(sz,WGo.NO_RULES);
    l.s.forEach(function(s){g.setStone(s[0],s[1],s[2]);});
-   var b=new WGo.SVGBoard(lb,{size:sz,width:Math.min(320,window.innerWidth*0.85),coordinates:false});
-   for(var x=0;x<sz;x++)for(var y=0;y<sz;y++){var c=g.position.get(x,y);if(c!==E)b.addObject(new WGo.FieldBoardObject(c===B?'B':'W',x,y));}
+   var b=new WGo.SVGBoard(lb,{size:sz,width:w,coordinates:false});
+   for(var x=0;x<sz;x++)for(var y=0;y<sz;y++){
+    var c=g.position.get(x,y);if(c===E)continue;
+    b.addObject(new WGo.FieldBoardObject(c===B?'B':'W',x,y));
+   }
   },100);
  }
 }
