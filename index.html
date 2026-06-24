@@ -373,6 +373,7 @@ function startGame(){
    }
    board.redraw();
    }
+   log('boardBox size: '+box.offsetWidth+'x'+box.offsetHeight+' children:'+box.children.length);
    gameActive=true;
  clearTimeout(aiTimer);
  if(mode==='ai'&&game.turn!==playerColor)aiTimer=setTimeout(aiMove,300);
