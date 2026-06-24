@@ -317,14 +317,14 @@ function render(){
 }
 
 function getCell(e){
- var scaleX=cv.width/cv.offsetWidth,scaleY=cv.height/cv.offsetHeight;
- var t=(e.changedTouches&&e.changedTouches[0])||(e.touches&&e.touches[0]);
- var cx=e.offsetX!==undefined?e.offsetX:(t?t.clientX:e.clientX)-cv.getBoundingClientRect().left;
- var cy=e.offsetY!==undefined?e.offsetY:(t?t.clientY:e.clientY)-cv.getBoundingClientRect().top;
- var x=cx*scaleX,y=cy*scaleY;
- var CELL=Math.max(22,Math.floor(460/size)),MARGIN=24;
- var col=Math.round((x-MARGIN)/CELL);
- var row=Math.round((y-MARGIN)/CELL);
+ var rect=cv.getBoundingClientRect();
+ var cssMARGIN=24*rect.width/cv.width;
+ var cssCELL=(rect.width-2*cssMARGIN)/(size-1);
+ var cx=e.clientX-rect.left,cy=e.clientY-rect.top;
+ var t=e.changedTouches&&e.changedTouches[0];
+ if(t){cx=t.clientX-rect.left;cy=t.clientY-rect.top}
+ var col=Math.round((cx-cssMARGIN)/cssCELL);
+ var row=Math.round((cy-cssMARGIN)/cssCELL);
  return(col>=0&&col<size&&row>=0&&row<size)?{c:col,r:row}:null;
 }
 
