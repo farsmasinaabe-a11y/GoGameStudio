@@ -318,13 +318,11 @@ function render(){
 }
 
 function getCell(e){
- var x=e.offsetX,y=e.offsetY;
- if(x===undefined){
-  var rect=cv.getBoundingClientRect();
-  var t=(e.changedTouches&&e.changedTouches[0])||(e.touches&&e.touches[0]);
-  x=(t?t.clientX:e.clientX)-rect.left;
-  y=(t?t.clientY:e.clientY)-rect.top;
- }
+ var rect=cv.getBoundingClientRect();
+ var scale=rect.width/cv.width;
+ var t=(e.changedTouches&&e.changedTouches[0])||(e.touches&&e.touches[0]);
+ var x=((t?t.clientX:e.clientX)-rect.left)/scale;
+ var y=((t?t.clientY:e.clientY)-rect.top)/scale;
  var col=Math.round((x-gMARGIN)/gCELL);
  var row=Math.round((y-gMARGIN)/gCELL);
  return(col>=0&&col<size&&row>=0&&row<size)?{c:col,r:row}:null;
@@ -337,7 +335,6 @@ cv.addEventListener('click',function(e){
  if(mode==='ai'&&game.turn!==B)return;
  var c=getCell(e);if(!c)return;
  var color=mode==='practice'?practiceColor:B;
- if(!game.isValid(c.c,c.r)){render();return}
  place(c.c,c.r,color);render();
  if(mode==='ai')setTimeout(aiMove,150);
 });
@@ -345,7 +342,6 @@ cv.addEventListener('touchend',function(e){e.preventDefault();
  if(mode==='ai'&&game.turn!==B)return;
  var c=getCell(e);if(!c)return;
  var color=mode==='practice'?practiceColor:B;
- if(!game.isValid(c.c,c.r)){render();return}
  place(c.c,c.r,color);render();
  if(mode==='ai')setTimeout(aiMove,150);
 });
