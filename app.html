@@ -148,6 +148,8 @@ function initGame(sz,level){
 }
 
 function refreshBoard(){
+ if(!board)return;
+ board.redraw();
  var pos=game.position;
  var newStones=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
