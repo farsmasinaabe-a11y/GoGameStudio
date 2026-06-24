@@ -177,12 +177,6 @@ function startGame(){
  initGame(sz,lv);
 
  var box=document.getElementById('boardBox');
- var parent=box.parentNode;
- var newBox=document.createElement('div');
- newBox.id='boardBox';
- newBox.style.display='inline-block';
- parent.replaceChild(newBox,box);
- box=newBox;
  var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.6,600);
 
  var styles={
@@ -198,29 +192,22 @@ function startGame(){
  };
  if(ss==='flat')theme.drawHandlers={B:new WGo.SVGStoneDrawHandler(),W:new WGo.SVGStoneDrawHandler()};
 
- board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
+ // remove old stones from board
+ while(stoneObjects.length)board.removeObject(stoneObjects.pop());
+ stoneObjects=[];
 
- board.on('click',function(evt,point){
-  if(!point)return;
-  if(mode==='practice'){
-   var cur=game.position.get(point.x,point.y);
-   game.setStone(point.x,point.y,cur===E?practiceColor:E);
-   refreshBoard();updateInfo();
-   return;
-  }
-  if(!gameActive||(mode==='ai'&&game.turn!==B))return;
-  if(!game.play(point.x,point.y))return;
-  hist.push({x:point.x,y:point.y,color:B});
-  passed=false;undoUsed=false;
- refreshBoard();updateInfo();
- if(mode==='ai')aiTimer=setTimeout(aiMove,200);
- });
+ if(!board){
+  board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
+  setupBoardClick();
+ }else{
+  board.setSize(size);
+ }
+ box.style.display='';
 
  showScreen('game');
  gameActive=true;
  clearTimeout(aiTimer);
  document.getElementById('result').style.display='none';
- document.getElementById('boardBox').style.display='';
  document.getElementById('btns').style.display='';
  document.getElementById('info').style.display='';
  document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
@@ -334,14 +321,15 @@ function act(a){
   else if(a==='closeGame'){
    var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
    if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
-   board=null;game=null;stoneObjects=[];
+   while(stoneObjects.length)board.removeObject(stoneObjects.pop());
+   stoneObjects=[];game=null;
+   document.getElementById('boardBox').style.display='none';
    document.getElementById('result').style.display='none';
-   document.getElementById('boardBox').style.display='';
    document.getElementById('btns').style.display='';
    document.getElementById('info').style.display='';
-  showScreen('menu-go');
-  return;
- }
+   showScreen('menu-go');
+   return;
+  }
  updateInfo();
  if(mode==='ai'&&gameActive)aiTimer=setTimeout(aiMove,200);
 }
@@ -356,5 +344,36 @@ function endGame(){
  document.getElementById('resultTitle').textContent='\uD83C\uDFC1 '+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!';
  document.getElementById('resultScore').textContent='\u26AB '+s[B].toFixed(1)+' : '+(s[W]+6.5).toFixed(1)+' \u26AA (\u043a\u043e\u043c\u0438 6.5)';
  document.getElementById('result').style.display='block';
+}
+
+// init board click handler once
+document.getElementById('boardBox').addEventListener('click',function(e){
+ if(!board||!game)return;
+ var target=e.target;
+ if(target.tagName==='svg'||target.closest('svg')){
+  // click handled by SVGBoard internally via its own listener
+ }
+});
+
+// WGo board click is attached on first startGame, listen via mutation
+var _boardClickSetup=false;
+function setupBoardClick(){
+ if(_boardClickSetup||!board)return;
+ _boardClickSetup=true;
+ board.on('click',function(evt,point){
+  if(!point)return;
+  if(mode==='practice'){
+   var cur=game.position.get(point.x,point.y);
+   game.setStone(point.x,point.y,cur===E?practiceColor:E);
+   refreshBoard();updateInfo();
+   return;
+  }
+  if(!gameActive||(mode==='ai'&&game.turn!==B))return;
+  if(!game.play(point.x,point.y))return;
+  hist.push({x:point.x,y:point.y,color:B});
+  passed=false;undoUsed=false;
+  refreshBoard();updateInfo();
+  if(mode==='ai')aiTimer=setTimeout(aiMove,200);
+ });
 }
 </script></body></html>
