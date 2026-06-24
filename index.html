@@ -258,13 +258,8 @@ function showScreen(id){
 }
 
 function openGoSettings(){
- try{
-  log('openGoSettings called');
-  document.getElementById('menu-go').innerHTML=goMenuHTML();
-  log('goMenuHTML done');
-  showScreen('menu-go');
-  log('showScreen menu-go done');
- }catch(e){log('ERROR openGoSettings: '+e.message);alert('openGoSettings error: '+e.message);}
+ document.getElementById('menu-go').innerHTML='<button class="btn-back" onclick="showScreen(\'menu-main\')">← Назад</button><h1>🀄️ Го</h1><div class="sub">Настройки</div><button class="btn-wide" onclick="startLearn()" style="margin-bottom:16px">📚 Обучение</button><label>Размер доски</label><select id="sizeSel"><option value="9" selected>9×9</option><option value="13">13×13</option><option value="19">19×19</option></select><label>Стиль доски</label><select id="boardStyle"><option value="wood" selected>Дерево</option><option value="bamboo">Бамбук</option></select><label>Стиль камней</label><select id="stoneStyle"><option value="glass" selected>Стеклянные</option></select><label>Подписи на доске</label><select id="coordStyle"><option value="1" selected>Да</option><option value="0">Нет</option></select><label>Режим игры</label><div class="tabs" id="modeTabs"><button class="active" data-mode="ai" onclick="switchGoMode(\'ai\')">🤖 ИИ</button><button data-mode="practice" onclick="switchGoMode(\'practice\')">🎯 Практика</button></div><div id="aiSettings"><label>Сложность ИИ</label><select id="levelSel"><option value="1">Новичок</option><option value="2" selected>Опытный</option><option value="3">Профессионал</option></select><label>Твой цвет</label><select id="colorSel"><option value="1" selected>⚫ Чёрные</option><option value="-1">⚪ Белые</option></select><label>Правила</label><select id="rulesSel"><option value="japanese" selected>Японские (коми 6.5)</option><option value="chinese">Китайские (коми 7.5)</option><option value="ing">ING (коми 7.5)</option><option value="free">Свободные (коми 0)</option></select></div><br><button class="btn-big btn-green" onclick="startGame()">🎮 Играть</button>';
+ showScreen('menu-go');
 }
 
 function switchGoMode(m){
@@ -311,7 +306,7 @@ function refreshBoard(){
 }
 
 function startLearn(){
- try{showLearnList();}catch(e){alert('startLearn error: '+e.message);}
+ showLearnListRU();
 }
 
 function startGame(){
@@ -577,28 +572,19 @@ function setupBoardClick(){
  });
 }
 
-function showLearnList(){
+function showLearnListRU(){
  showScreen('screen-learn');
- var lessons=lang==='ru'?[
-  {t:'Правила Го',d:'Цель — окружить больше территории. Камни ставятся на пересечения. Группа живёт, пока имеет дыхания.'},
-  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается. Захваченные камни идут в копилку.'},
-  {t:'Правило Ko',d:'Нельзя повторять позицию. Ответный захват запрещён — нужно сначала сделать ход в другом месте.'},
+ var lessons=[
+  {t:'Правила Го',d:'Цель — окружить больше территории. Камни ставятся на пересечения.'},
+  {t:'Захват камней',d:'Если у группы не осталось дыханий — она снимается.'},
+  {t:'Правило Ko',d:'Нельзя повторять позицию. Ответный захват запрещён.'},
   {t:'Самоубийство',d:'Нельзя ставить камень без дыханий, если он не захватывает вражеские камни.'},
   {t:'Глаза',d:'Два глаза делают группу неуязвимой. Один глаз — под угрозой.'},
   {t:'Подсчёт очков',d:'Территория + захваченные камни. Белые получают коми.'},
   {t:'Seki (Сэки)',d:'Взаимная жизнь — никто не может захватить без самоубийства.'}
- ]:[
-  {t:'Rules of Go',d:'Surround more territory than your opponent. Stones are placed on intersections. A group lives as long as it has liberties.'},
-  {t:'Capturing Stones',d:'When a group runs out of liberties, it is removed from the board. Captured stones go to the prisoner pile.'},
-  {t:'Ko Rule',d:'You cannot repeat a previous board position. An immediate recapture is forbidden — play elsewhere first.'},
-  {t:'Suicide',d:'You cannot place a stone with no liberties unless it captures enemy stones in the process.'},
-  {t:'Eyes',d:'Two eyes make a group invulnerable. One eye — the group is under threat of capture.'},
-  {t:'Scoring',d:'Your score = territory + captured enemy stones. White receives komi as compensation for going second.'},
-  {t:'Seki',d:'Mutual life — neither side can capture without suicide. Points inside seki count for neither player.'}
  ];
-
- var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">\u2190 '+(lang==='ru'?'В меню':'Back')+'</button>';
- html+='<h3 style="margin-bottom:12px">\uD83D\uDCDA '+(lang==='ru'?'Обучение':'Learn')+'</h3>';
+ var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">← В меню</button>';
+ html+='<h3 style="margin-bottom:12px">📚 Обучение</h3>';
  for(var i=0;i<lessons.length;i++){
   html+='<div style="background:#1e1e3a;border:1px solid #333;border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="showLesson('+i+')">';
   html+='<b>'+(i+1)+'. '+lessons[i].t+'</b>';
@@ -606,6 +592,10 @@ function showLearnList(){
   html+='</div>';
  }
  document.getElementById('learnContent').innerHTML=html;
+}
+
+function showLearnList(){
+ showLearnListRU();
 }
 
 var _lessonsFull={
