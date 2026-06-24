@@ -8,7 +8,7 @@ canvas{border-radius:6px;box-shadow:0 4px 20px #000;display:block;margin:0 auto;
 #game{display:none;flex-direction:column;align-items:center}
 #boardWrap{position:relative;display:inline-block}
 #hitGrid{position:absolute;top:0;left:0;z-index:5;pointer-events:none}
-.hitCell{position:absolute;border-radius:50%;cursor:pointer;background:rgba(255,0,0,0.15);pointer-events:auto}
+.hitCell{position:absolute;border-radius:50%;cursor:pointer;border:1px solid red;pointer-events:auto}
 #btns{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;justify-content:center}
 button{background:#2a2a4a;color:#ddd;border:1px solid #444;padding:8px 14px;border-radius:8px;font-size:14px;cursor:pointer;min-width:48px;transition:background .15s}
 button:active{background:#444}
@@ -335,6 +335,12 @@ function render(){
  }
 
  var R=gCELL/2-2.5,pos=game.position;
+ // DEBUG: draw cell numbers at top-left area
+ ctx.fillStyle='rgba(255,255,255,0.5)';ctx.font='9px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+ for(var x=0;x<size;x++)for(var y=0;y<size;y++){
+  var cx=gMARGIN+x*gCELL,cy=gMARGIN+y*gCELL;
+  if(x<3&&y<3)ctx.fillText(x+','+y,cx,cy);
+ }
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   var v=pos.get(x,y);if(v===E)continue;
   var cx=gMARGIN+x*gCELL,cy=gMARGIN+y*gCELL;
