@@ -238,6 +238,7 @@ function startGame(){
  showScreen('game');
  gameActive=true;
  clearTimeout(aiTimer);
+ if(mode==='ai'&&game.turn!==playerColor)aiTimer=setTimeout(aiMove,300);
  document.getElementById('result').style.display='none';
  document.getElementById('btns').style.display='';
  document.getElementById('info').style.display='';
