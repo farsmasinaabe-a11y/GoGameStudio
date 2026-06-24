@@ -103,6 +103,11 @@ button:active{background:#444}
   <button onclick="act('undo')">&#x21A9; Отмена</button>
   <button class="btn-red" onclick="act('end')">&#x1F3C1; Конец</button>
  </div>
+ <div id="result" style="display:none;margin:16px">
+  <h2 id="resultTitle" style="font-size:22px;margin-bottom:8px"></h2>
+  <div id="resultScore" style="font-size:16px;color:#aaa;margin-bottom:16px"></div>
+  <button class="btn-big btn-green" onclick="act('closeGame')">&#x1F3AE; В меню</button>
+ </div>
 </div>
 
 <script>
@@ -315,22 +320,36 @@ function act(a){
   hist.pop();game.popPosition();
   passed=false;undoUsed=true;
   refreshBoard();
- }else if(a==='undo'){
+ }else if(a==='clear'){
   initGame(size,aiLevel);
   refreshBoard();updateInfo();
- }else if(a==='end'){gameActive=false;clearTimeout(aiTimer);endGame();return}
+ }else if(a==='end'){endGame();return}
+ else if(a==='closeGame'){
+  var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
+  if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
+  var box=document.getElementById('boardBox');
+  while(box.firstChild)box.removeChild(box.firstChild);
+  board=null;game=null;stoneObjects=[];
+  document.getElementById('result').style.display='none';
+  document.getElementById('boardBox').style.display='';
+  document.getElementById('btns').style.display='';
+  document.getElementById('info').style.display='';
+  showScreen('menu-go');
+  return;
+ }
  updateInfo();
  if(mode==='ai'&&gameActive)aiTimer=setTimeout(aiMove,200);
 }
 
 function endGame(){
  gameActive=false;clearTimeout(aiTimer);
- board=null;
- var box=document.getElementById('boardBox');
- box.innerHTML='';
  var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
- if(tg){tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}))}
- else{alert('\uD83C\uDFC1 \u0418\u0433\u0440\u0430 \u043e\u043a\u043e\u043d\u0447\u0435\u043d\u0430!\n\u26AB '+s[B].toFixed(1)+' : '+(s[W]+6.5).toFixed(1)+' \u26AA (\u043a\u043e\u043c\u0438 6.5)\n'+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!')}
- requestAnimationFrame(function(){showScreen('menu-go');});
+ document.getElementById('boardBox').style.display='none';
+ document.getElementById('btns').style.display='none';
+ document.getElementById('info').style.display='none';
+ document.getElementById('practiceBar').style.display='none';
+ document.getElementById('resultTitle').textContent='\uD83C\uDFC1 '+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!';
+ document.getElementById('resultScore').textContent='\u26AB '+s[B].toFixed(1)+' : '+(s[W]+6.5).toFixed(1)+' \u26AA (\u043a\u043e\u043c\u0438 6.5)';
+ document.getElementById('result').style.display='block';
 }
 </script></body></html>
