@@ -4660,13 +4660,22 @@
           return _super !== null && _super.apply(this, arguments) || this;
       }
       MatteStoneBlack.prototype.createElement = function (config, addDef) {
-          var _a;
+          var _a, _b;
           _super.prototype.createElement.call(this, config, addDef);
+          if (!this._gradId) {
+              var grad = document.createElementNS(SVG_NS, 'radialGradient');
+              this._gradId = 'mbg' + Math.random().toString(36).slice(2,8);
+              grad.setAttribute('id', this._gradId);
+              grad.innerHTML = '<stop offset="0%" stop-color="#4a4a4a"/><stop offset="70%" stop-color="#1a1a1a"/><stop offset="100%" stop-color="#0a0a0a"/>';
+              addDef(grad);
+          }
           var stone = document.createElementNS(SVG_NS, 'circle');
           stone.setAttribute('cx', '0');
           stone.setAttribute('cy', '0');
-          stone.setAttribute('fill', '#1a1a1a');
+          stone.setAttribute('fill', 'url(#' + this._gradId + ')');
           stone.setAttribute('r', config.theme.stoneSize);
+          stone.setAttribute('stroke', '#111');
+          stone.setAttribute('stroke-width', '0.015');
           return _a = {},
               _a[SVG_OBJECTS] = stone,
               _a[SVG_SHADOWS] = this.createShadow(config, addDef),
@@ -4683,13 +4692,20 @@
       MatteStoneWhite.prototype.createElement = function (config, addDef) {
           var _a;
           _super.prototype.createElement.call(this, config, addDef);
+          if (!this._gradId) {
+              var grad = document.createElementNS(SVG_NS, 'radialGradient');
+              this._gradId = 'mbw' + Math.random().toString(36).slice(2,8);
+              grad.setAttribute('id', this._gradId);
+              grad.innerHTML = '<stop offset="0%" stop-color="#fafafa"/><stop offset="70%" stop-color="#e0e0e0"/><stop offset="100%" stop-color="#b0b0b0"/>';
+              addDef(grad);
+          }
           var stone = document.createElementNS(SVG_NS, 'circle');
           stone.setAttribute('cx', '0');
           stone.setAttribute('cy', '0');
-          stone.setAttribute('fill', '#f0f0f0');
+          stone.setAttribute('fill', 'url(#' + this._gradId + ')');
           stone.setAttribute('r', config.theme.stoneSize);
-          stone.setAttribute('stroke', '#888');
-          stone.setAttribute('stroke-width', '0.02');
+          stone.setAttribute('stroke', '#999');
+          stone.setAttribute('stroke-width', '0.015');
           return _a = {},
               _a[SVG_OBJECTS] = stone,
               _a[SVG_SHADOWS] = this.createShadow(config, addDef),
