@@ -126,7 +126,7 @@ var B=1,W=-1,E=0;
 var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
 var stoneObjects=[],aiTimer=0,lastStoneStyle='',playerColor=B;
-var currentRules=WGo.JAPANESE_RULES,komi=6.5;
+var currentRules=WGo.JAPANESE_RULES,komi=6.5,boardReady=true;
 
 function showScreen(id){
  document.getElementById('menu-main').style.display='none';
@@ -215,11 +215,13 @@ function startGame(){
 
  // recreate board if stone style changed or first run
  if(!board||ss!==lastStoneStyle){
+  boardReady=false;
   box.innerHTML='';
   board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
   lastStoneStyle=ss;
   _boardClickDone=false;
   setupBoardClick();
+  setTimeout(function(){boardReady=true;},200);
  }else{
   board.setSize(size);
   var t=board.config.theme;
@@ -236,6 +238,7 @@ function startGame(){
 
  showScreen('game');
  gameActive=true;
+ boardReady=true;
  clearTimeout(aiTimer);
  document.getElementById('result').style.display='none';
  document.getElementById('btns').style.display='';
@@ -412,8 +415,8 @@ function setupBoardClick(){
    game.setStone(point.x,point.y,cur===E?practiceColor:E);
    refreshBoard();updateInfo();
    return;
-  }
-  if(!gameActive||(mode==='ai'&&game.turn!==playerColor))return;
+ }
+ if(!gameActive||!boardReady||(mode==='ai'&&game.turn!==playerColor))return;
   if(!game.play(point.x,point.y))return;
   hist.push({x:point.x,y:point.y,color:playerColor});
   passed=false;undoUsed=false;
