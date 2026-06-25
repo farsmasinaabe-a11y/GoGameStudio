@@ -141,23 +141,6 @@ var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
 var stoneObjects=[],aiTimer=0,playerColor=B,komi=6.5,origB=null,origW=null;
 var wgoLoaded=false,wgoLoading=false,wgoCallbacks=[];
-var lastMarker=null;
-
-function setLastMarker(x,y){
- if(!board)return;
- if(lastMarker)board.removeObject(lastMarker);
- lastMarker={type:'custom',x:x,y:y,zIndex:10,handler:{createElement:function(t,e){
-  var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
-  c.setAttribute('cx','0');c.setAttribute('cy','0');
-  c.setAttribute('r','0.12');c.setAttribute('fill','#e33');
-  return c;
- },updateElement:function(){}}};
- board.addObject(lastMarker);
-}
-
-function clearLastMarker(){
- if(lastMarker&&board){board.removeObject(lastMarker);lastMarker=null;}
-}
 
 var COLS='ABCDEFGHJKLMNOPQRST';
 
@@ -345,7 +328,6 @@ function startGame(){
   box.style.display='';
 
  showScreen('game');
- clearLastMarker();
  document.getElementById('moveLog').style.display='block';
  document.getElementById('moveLog').innerHTML='';
  gameActive=true;
@@ -469,7 +451,6 @@ function aiMove(){
  var m=best[Math.floor(Math.random()*best.length)];
  game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiC});
  playStoneSound();
- setLastMarker(m.x,m.y);
  logMove('ИИ',m.x,m.y);
  passed=false;undoUsed=false;
  refreshBoard();updateInfo();
@@ -530,13 +511,10 @@ function act(a){
    }
    popLog(mode==='ai'?2:1);
    passed=false;undoUsed=true;
-   clearLastMarker();
-   for(var u=hist.length-1;u>=0;u--)if(hist[u]){setLastMarker(hist[u].x,hist[u].y);break}
    refreshBoard();
   }else if(a==='clear'){
    if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
    stoneObjects=[];
-   clearLastMarker();
    initGame(size,aiLevel);
    document.getElementById('moveLog').innerHTML='';
    refreshBoard();updateInfo();
@@ -561,7 +539,6 @@ function act(a){
 
  function endGame(){
  gameActive=false;clearTimeout(aiTimer);
- clearLastMarker();
  document.getElementById('moveLog').style.display='none';
  var s=calcScore(),w=s[B]>s[W]+komi?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
  document.getElementById('boardBox').style.display='none';
@@ -593,14 +570,13 @@ function setupBoardClick(){
    var cur=game.position.get(point.x,point.y);
    var placing=cur===E;
    game.setStone(point.x,point.y,placing?practiceColor:E);
-    if(placing){playStoneSound();setLastMarker(point.x,point.y);logMove(practiceColor===B?'⚫':'⚪',point.x,point.y);}
+    if(placing){playStoneSound();logMove(practiceColor===B?'⚫':'⚪',point.x,point.y);}
     refreshBoard();updateInfo();
    return;
  }
  if(!gameActive||(mode==='ai'&&game.turn!==playerColor))return;
    if(!game.play(point.x,point.y))return;
     playStoneSound();
-    setLastMarker(point.x,point.y);
     logMove('Вы',point.x,point.y);
     hist.push({x:point.x,y:point.y,color:playerColor});
   passed=false;undoUsed=false;
