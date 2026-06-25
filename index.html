@@ -13,6 +13,7 @@ button:active{background:#444}
 .btn-big{padding:12px 32px;font-size:18px;margin-top:12px}
 .btn-red{background:#5a2020;border-color:#733}
 .btn-green{background:#2a5a2a;border-color:#3a3}
+.btn-wide{display:block;width:100%;box-sizing:border-box;margin-bottom:16px}
 .btn-back{background:#2a2a4a;border-color:#444;font-size:13px;padding:6px 12px;margin-bottom:8px}
 .btn-sm{padding:6px 10px;font-size:12px;min-width:36px;border-radius:6px}
 .btn-active{background:#4a4a6a;border-color:#888}
@@ -42,9 +43,9 @@ button:active{background:#444}
 </div>
 
 <div id="menu-go" class="menu-screen" style="display:none">
- <button class="btn-wide" onclick="showScreen('menu-main')" style="margin-bottom:16px">Главное меню</button>
+ <button class="btn-wide" onclick="showScreen('menu-main')">Главное меню</button>
 
- <button class="btn-wide" onclick="startLearn()" style="margin-bottom:16px">&#x1F4DC; Правила</button>
+ <button class="btn-wide" onclick="startLearn()">&#x1F4DC; Правила</button>
 
  <div style="display:flex;gap:10px;margin-bottom:12px">
   <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
@@ -140,6 +141,23 @@ var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
 var stoneObjects=[],aiTimer=0,playerColor=B,komi=6.5,origB=null,origW=null;
 var wgoLoaded=false,wgoLoading=false,wgoCallbacks=[];
+var lastMarker=null;
+
+function setLastMarker(x,y){
+ if(!board)return;
+ if(lastMarker)board.removeObject(lastMarker);
+ lastMarker={type:'custom',x:x,y:y,zIndex:10,handler:{createElement:function(t,e){
+  var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx','0');c.setAttribute('cy','0');
+  c.setAttribute('r','0.12');c.setAttribute('fill','#e33');
+  return c;
+ }}};
+ board.addObject(lastMarker);
+}
+
+function clearLastMarker(){
+ if(lastMarker&&board){board.removeObject(lastMarker);lastMarker=null;}
+}
 
 var COLS='ABCDEFGHJKLMNOPQRST';
 
@@ -195,6 +213,7 @@ function playStoneSound(){
  gain.connect(audioCtx.destination);
  src.start(t);
  src.stop(t+dur);
+ try{navigator.vibrate(10)}catch(e){}
 }
 
 function showScreen(id){
@@ -328,6 +347,7 @@ function startGame(){
   box.style.display='';
 
  showScreen('game');
+ clearLastMarker();
  document.getElementById('moveLog').style.display='block';
  document.getElementById('moveLog').innerHTML='';
  gameActive=true;
@@ -415,6 +435,7 @@ function countAtari(pos,color){
 function aiMove(){
  if(!gameActive||mode!=='ai'||game.turn!==-playerColor)return;
  var aiC=-playerColor,lv=aiLevel,p=AI[lv]||AI[2];
+ document.getElementById('info').textContent+='  |  \u0418\u0418 \u0434\u0443\u043c\u0430\u0435\u0442...';
  var all=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   if(game.position.get(x,y)!==E)continue;
@@ -422,17 +443,20 @@ function aiMove(){
   if(lv===1&&Math.random()<p.rand){all.push({x:x,y:y,s:Math.random()*35-5});continue}
   var sc=aiEval(x,y,res,aiC,lv);
   if(p.look){
-   var oppBest=-Infinity;
-   game.pushPosition(res);
-   for(var ox=0;ox<size;ox++)for(var oy=0;oy<size;oy++){
-    if(game.position.get(ox,oy)!==E)continue;
-    var oppRes=game.tryToPlay(ox,oy);if(!oppRes)continue;
-    var oppSc=aiEval(ox,oy,oppRes,-aiC,2,true);
-    if(oppSc>oppBest)oppBest=oppSc;
+    var oppBest=-Infinity;
+    var aiBefore=countStones(res,aiC);
+    game.pushPosition(res);
+    for(var ox=0;ox<size;ox++)for(var oy=0;oy<size;oy++){
+     if(game.position.get(ox,oy)!==E)continue;
+     var oppRes=game.tryToPlay(ox,oy);if(!oppRes)continue;
+     var aiLost=aiBefore-countStones(oppRes,aiC);
+     var atariDiff=countAtari(oppRes,aiC)-countAtari(res,aiC);
+     var oppThreat=aiLost*15+atariDiff*40;
+     if(oppThreat>oppBest)oppBest=oppThreat;
+    }
+    game.popPosition();
+    sc-=oppBest;
    }
-   game.popPosition();
-   sc-=oppBest*2;
-  }
   if(lv===1||sc>=-10)all.push({x:x,y:y,s:sc});
  }
  if(!all.length){logMove('ИИ','pass','');act('pass');return}
@@ -447,6 +471,7 @@ function aiMove(){
  var m=best[Math.floor(Math.random()*best.length)];
  game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiC});
  playStoneSound();
+ setLastMarker(m.x,m.y);
  logMove('ИИ',m.x,m.y);
  passed=false;undoUsed=false;
  refreshBoard();updateInfo();
@@ -487,9 +512,10 @@ function calcScore(){
 
 function updateInfo(){
  var sc=calcScore();
+ var cap=game.position.capCount;
  var bscore=sc[B];
  var wscore=sc[W]+komi;
- document.getElementById('info').textContent='\u26AB '+bscore.toFixed(1)+' : '+wscore.toFixed(1)+' \u26AA (коми '+komi+') \u0425\u043e\u0434 '+(hist.length+1);
+ document.getElementById('info').textContent='\u26AB \u00D7'+cap.black+'  \u26AA \u00D7'+cap.white+'  |  \u26AB '+bscore.toFixed(1)+' : '+wscore.toFixed(1)+' \u26AA (коми '+komi+') \u0425\u043e\u0434 '+(hist.length+1);
 }
 
 function act(a){
@@ -505,10 +531,13 @@ function act(a){
    }
    popLog(mode==='ai'?2:1);
    passed=false;undoUsed=true;
+   clearLastMarker();
+   for(var u=hist.length-1;u>=0;u--)if(hist[u]){setLastMarker(hist[u].x,hist[u].y);break}
    refreshBoard();
   }else if(a==='clear'){
    if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
    stoneObjects=[];
+   clearLastMarker();
    initGame(size,aiLevel);
    document.getElementById('moveLog').innerHTML='';
    refreshBoard();updateInfo();
@@ -533,6 +562,7 @@ function act(a){
 
  function endGame(){
  gameActive=false;clearTimeout(aiTimer);
+ clearLastMarker();
  document.getElementById('moveLog').style.display='none';
  var s=calcScore(),w=s[B]>s[W]+komi?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
  document.getElementById('boardBox').style.display='none';
@@ -564,13 +594,14 @@ function setupBoardClick(){
    var cur=game.position.get(point.x,point.y);
    var placing=cur===E;
    game.setStone(point.x,point.y,placing?practiceColor:E);
-    if(placing){playStoneSound();logMove(practiceColor===B?'⚫':'⚪',point.x,point.y);}
+    if(placing){playStoneSound();setLastMarker(point.x,point.y);logMove(practiceColor===B?'⚫':'⚪',point.x,point.y);}
     refreshBoard();updateInfo();
    return;
  }
  if(!gameActive||(mode==='ai'&&game.turn!==playerColor))return;
    if(!game.play(point.x,point.y))return;
     playStoneSound();
+    setLastMarker(point.x,point.y);
     logMove('Вы',point.x,point.y);
     hist.push({x:point.x,y:point.y,color:playerColor});
   passed=false;undoUsed=false;
