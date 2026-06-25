@@ -26,9 +26,6 @@ button:active{background:#444}
 .game-card:hover,.game-card:active{background:#2a2a4e}
 .game-card h2{font-size:20px;margin-bottom:4px}
 .game-card p{font-size:12px;color:#888}
-.tabs{display:inline-flex;gap:0;margin-bottom:16px;border-radius:8px;overflow:hidden;border:1px solid #444}
-.tabs button{background:#1e1e3a;border:none;border-radius:0;padding:8px 16px;font-size:13px;min-width:0}
-.tabs button.active{background:#2a2a4a;color:#fff}
 #practiceBar{display:none;gap:8px;justify-content:center;align-items:center;margin:4px 0}
 #info{font-size:12px;color:#aaa;margin:2px 0;min-height:18px}
 #moveLog{display:none;margin:8px 0;align-self:stretch;max-height:80px;overflow-y:auto;text-align:left;font-size:11px;color:#aaa;background:#12122a;border:1px solid #333;border-radius:8px;padding:6px 10px;font-family:monospace;line-height:1.4}
@@ -43,9 +40,10 @@ button:active{background:#444}
 </div>
 
 <div id="menu-go" class="menu-screen" style="display:none">
- <button class="btn-wide" onclick="showScreen('menu-main')">Главное меню</button>
-
- <button class="btn-wide" onclick="startLearn()">&#x1F4DC; Правила</button>
+ <div style="display:flex;gap:10px;margin-bottom:12px">
+  <button class="btn-wide" onclick="showScreen('menu-main')" style="margin-bottom:0">Главное меню</button>
+  <button class="btn-wide" onclick="startLearn()" style="margin-bottom:0">&#x1F4DC; Правила</button>
+ </div>
 
  <div style="display:flex;gap:10px;margin-bottom:12px">
   <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
@@ -76,10 +74,11 @@ button:active{background:#444}
   <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
    <div style="font-size:14px;color:#aaa;margin-bottom:10px">&#x1F3AE; Игра</div>
    <label>Режим</label>
-   <div class="tabs" id="modeTabs" style="margin-bottom:8px">
-    <button class="active" data-mode="ai" onclick="switchGoMode('ai')">ИИ</button>
-    <button data-mode="practice" onclick="switchGoMode('practice')">Практика</button>
-   </div>
+   <select id="modeSel" onchange="switchGoMode(this.value)" style="margin-bottom:8px">
+    <option value="ai" selected>ИИ</option>
+    <option value="twoplayer">Вдвоём</option>
+    <option value="practice">Практика</option>
+   </select>
    <div id="aiSettings">
     <label>Сложность</label>
     <select id="levelSel">
@@ -235,10 +234,8 @@ function switchGoMode(m){
  }else{
   ai.style.opacity='0.35';
   ai.style.pointerEvents='none';
-  document.getElementById('rulesSel').value='free';
+  if(m==='practice')document.getElementById('rulesSel').value='free';
  }
- var tabs=document.getElementById('modeTabs').children;
- for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle('active',tabs[i].dataset.mode===m);
 }
 
 function setPracticeColor(c){
@@ -515,7 +512,8 @@ function updateInfo(){
  var cap=game.position.capCount;
  var bscore=sc[B];
  var wscore=sc[W]+komi;
- document.getElementById('info').textContent='\u26AB \u00D7'+cap.black+'  \u26AA \u00D7'+cap.white+'  |  \u26AB '+bscore.toFixed(1)+' : '+wscore.toFixed(1)+' \u26AA (коми '+komi+') \u0425\u043e\u0434 '+(hist.length+1);
+ var turn=mode==='twoplayer'?' \u2014 '+(game.turn===B?'\u26AB':'\u26AA'):'';
+ document.getElementById('info').textContent='\u26AB \u00D7'+cap.black+'  \u26AA \u00D7'+cap.white+'  |  \u26AB '+bscore.toFixed(1)+' : '+wscore.toFixed(1)+' \u26AA (коми '+komi+') \u0425\u043e\u0434 '+(hist.length+1)+turn;
 }
 
 function act(a){
