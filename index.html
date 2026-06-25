@@ -429,7 +429,7 @@ function aiMove(){
  all.sort(function(a,b){return b.s-a.s});
  var best=[];
  if(lv===1){
-  var topN=Math.max(3,Math.ceil(all.length*0.3));
+  var topN=Math.max(1,Math.ceil(all.length*0.3));
   for(var i=0;i<topN;i++)best.push(all[i]);
  }else{
   for(var i=0;i<all.length;i++){if(all[i].s===all[0].s)best.push(all[i]);else break}
@@ -521,8 +521,9 @@ function act(a){
  if(mode==='ai'&&gameActive)aiTimer=setTimeout(aiMove,200);
 }
 
-function endGame(){
+ function endGame(){
  gameActive=false;clearTimeout(aiTimer);
+ document.getElementById('moveLog').style.display='none';
  var s=calcScore(),w=s[B]>s[W]+komi?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
  document.getElementById('boardBox').style.display='none';
  document.getElementById('btns').style.display='none';
