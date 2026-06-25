@@ -46,56 +46,58 @@ button:active{background:#444}
 
  <button class="btn-wide" onclick="startLearn()" style="margin-bottom:16px">&#x1F4DA; Обучение</button>
 
- <div style="background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:12px;text-align:left">
-  <div style="font-size:14px;color:#aaa;margin-bottom:10px">&#x1FA91; Доска</div>
-  <label>Размер</label>
-  <select id="sizeSel">
-   <option value="9" selected>9&#xD7;9</option>
-   <option value="13">13&#xD7;13</option>
-   <option value="19">19&#xD7;19</option>
-  </select>
-  <label>Стиль</label>
-  <select id="boardStyle">
-   <option value="wood" selected>Дуб</option>
-   <option value="bamboo">Бамбук</option>
-  </select>
-  <label>Камни</label>
-  <select id="stoneStyle">
-   <option value="glass" selected>Глянцевые</option>
-   <option value="matte">Матовые</option>
-  </select>
-  <label>Подписи</label>
-  <select id="coordStyle">
-   <option value="1" selected>Да</option>
-   <option value="0">Нет</option>
-  </select>
- </div>
-
- <div style="background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:12px;text-align:left">
-  <div style="font-size:14px;color:#aaa;margin-bottom:10px">&#x1F3AE; Игра</div>
-  <label>Режим</label>
-  <div class="tabs" id="modeTabs" style="margin-bottom:8px">
-   <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; ИИ</button>
-   <button data-mode="practice" onclick="switchGoMode('practice')">&#x1F3AF; Практика</button>
+ <div style="display:flex;gap:10px;margin-bottom:12px">
+  <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
+   <div style="font-size:14px;color:#aaa;margin-bottom:10px">&#x26AB; Доска</div>
+   <label>Размер</label>
+   <select id="sizeSel">
+    <option value="9" selected>9&#xD7;9</option>
+    <option value="13">13&#xD7;13</option>
+    <option value="19">19&#xD7;19</option>
+   </select>
+   <label>Стиль</label>
+   <select id="boardStyle">
+    <option value="wood" selected>Дуб</option>
+    <option value="bamboo">Бамбук</option>
+   </select>
+   <label>Камни</label>
+   <select id="stoneStyle">
+    <option value="glass" selected>Глянцевые</option>
+    <option value="matte">Матовые</option>
+   </select>
+   <label>Подписи</label>
+   <select id="coordStyle">
+    <option value="1" selected>Да</option>
+    <option value="0">Нет</option>
+   </select>
   </div>
-  <div id="aiSettings">
-   <label>Сложность</label>
-   <select id="levelSel">
-    <option value="1">Новичок</option>
-    <option value="2" selected>Опытный</option>
-    <option value="3">Профессионал</option>
-   </select>
-   <label>Цвет</label>
-   <select id="colorSel">
-    <option value="1" selected>⚫ Чёрные</option>
-    <option value="-1">⚪ Белые</option>
-   </select>
-   <label>Подсчёт</label>
-   <select id="rulesSel">
-    <option value="japanese" selected>Японские (коми 6.5)</option>
-    <option value="chinese">Китайские (коми 7.5)</option>
-    <option value="free">Свободные (коми 0)</option>
-   </select>
+
+  <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
+   <div style="font-size:14px;color:#aaa;margin-bottom:10px">&#x1F3AE; Игра</div>
+   <label>Режим</label>
+   <div class="tabs" id="modeTabs" style="margin-bottom:8px">
+    <button class="active" data-mode="ai" onclick="switchGoMode('ai')">&#x1F916; ИИ</button>
+    <button data-mode="practice" onclick="switchGoMode('practice')">&#x1F3AF; Практика</button>
+   </div>
+   <div id="aiSettings">
+    <label>Сложность</label>
+    <select id="levelSel">
+     <option value="1">Новичок</option>
+     <option value="2" selected>Опытный</option>
+     <option value="3">Профессионал</option>
+    </select>
+    <label>Цвет</label>
+    <select id="colorSel">
+     <option value="1" selected>⚫ Чёрные</option>
+     <option value="-1">⚪ Белые</option>
+    </select>
+    <label>Подсчёт</label>
+    <select id="rulesSel">
+     <option value="japanese" selected>Японские (коми 6.5)</option>
+     <option value="chinese">Китайские (коми 7.5)</option>
+     <option value="free">Свободные (коми 0)</option>
+    </select>
+   </div>
   </div>
  </div>
 
