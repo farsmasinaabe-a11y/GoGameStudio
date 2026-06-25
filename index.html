@@ -13,7 +13,7 @@ button:active{background:#444}
 .btn-big{padding:12px 32px;font-size:18px;margin-top:12px}
 .btn-red{background:#5a2020;border-color:#733}
 .btn-green{background:#2a5a2a;border-color:#3a3}
-.btn-back{background:#333;border-color:#555;font-size:13px;padding:6px 12px;margin-bottom:8px}
+.btn-back{background:#2a2a4a;border-color:#444;font-size:13px;padding:6px 12px;margin-bottom:8px}
 .btn-sm{padding:6px 10px;font-size:12px;min-width:36px;border-radius:6px}
 .btn-active{background:#4a4a6a;border-color:#888}
 .menu-screen{margin-top:10vh;text-align:center;position:relative}
@@ -84,7 +84,7 @@ button:active{background:#444}
     <select id="levelSel">
      <option value="1">Новичок</option>
      <option value="2" selected>Опытный</option>
-     <option value="3">Профессионал</option>
+     <option value="3">Эксперт</option>
     </select>
     <label>Цвет</label>
     <select id="colorSel">
@@ -209,7 +209,15 @@ function openGoSettings(){showScreen('menu-go')}
 
 function switchGoMode(m){
  mode=m;
- document.getElementById('aiSettings').style.display=(m==='ai'?'block':'none');
+ var ai=document.getElementById('aiSettings');
+ if(m==='ai'){
+  ai.style.opacity='';
+  ai.style.pointerEvents='';
+ }else{
+  ai.style.opacity='0.35';
+  ai.style.pointerEvents='none';
+  document.getElementById('rulesSel').value='free';
+ }
  var tabs=document.getElementById('modeTabs').children;
  for(var i=0;i<tabs.length;i++)tabs[i].classList.toggle('active',tabs[i].dataset.mode===m);
 }
