@@ -298,13 +298,33 @@ function posBonus(x,y){
  return bonus;
 }
 
-function aiEvaluate(x,y){
- var result=game.tryToPlay(x,y);
- if(!result)return-1;
- var curBl=countStones(game.position,B);
- var newBl=countStones(result,B);
- var captured=curBl-newBl;
- return captured*10+(aiLevel>=2?posBonus(x,y):0);
+var AI={1:{rand:0.7,capW:5,atariW:-10,terrW:0,posW:0,look:false},
+        2:{rand:0,capW:12,atariW:-50,terrW:0.3,posW:1,look:false},
+        3:{rand:0,capW:15,atariW:-60,terrW:0.8,posW:2,look:true}};
+
+function terrScore(pos,color){
+ var opp=-color,sc=0;
+ for(var x=0;x<size;x++)for(var y=0;y<size;y++){
+  if(pos.get(x,y)!==E)continue;
+  var f=0,e=0;
+  if(x>0){var v=pos.get(x-1,y);if(v===color)f++;else if(v===opp)e++}
+  if(x<size-1){v=pos.get(x+1,y);if(v===color)f++;else if(v===opp)e++}
+  if(y>0){v=pos.get(x,y-1);if(v===color)f++;else if(v===opp)e++}
+  if(y<size-1){v=pos.get(x,y+1);if(v===color)f++;else if(v===opp)e++}
+  if(f>e)sc+=(f-e)*2;else if(e>f)sc-=(e-f)*2;
+ }
+ return sc;
+}
+
+function aiEval(x,y,pos,color,lv,fast){
+ var p=AI[lv]||AI[2],opp=-color,sc=0;
+ var cb=countStones(game.position,B),nb=countStones(pos,B);
+ sc+=(color===B?nb-cb:cb-nb)*p.capW;
+ sc+=countAtari(pos,color)*p.atariW;
+ sc+=countAtari(pos,opp)*Math.abs(p.atariW)*0.6;
+ if(p.posW>0)sc+=posBonus(x,y)*p.posW;
+ if(!fast&&p.terrW>0){sc+=terrScore(pos,color)*p.terrW;sc-=terrScore(pos,opp)*p.terrW*0.5;}
+ return sc;
 }
 
 function countAtari(pos,color){
@@ -335,50 +355,38 @@ function countAtari(pos,color){
 
 function aiMove(){
  if(!gameActive||mode!=='ai'||game.turn!==-playerColor)return;
- var aiColor=-playerColor;
+ var aiC=-playerColor,lv=aiLevel,p=AI[lv]||AI[2];
  var all=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   if(game.position.get(x,y)!==E)continue;
-  var result=game.tryToPlay(x,y);
-  if(!result)continue;
-  var curBl=countStones(game.position,B);
-  var newBl=countStones(result,B);
-  var captured=curBl-newBl;
-   var sc=captured*10+posBonus(x,y);
-   var atariCnt=countAtari(result,aiColor);
-   sc-=atariCnt*50;
-   if(sc<0)continue; // skip suicidal moves
-   if(aiLevel===3){
-    var oppBest=0;
-    game.pushPosition(result);
-    for(var ox=0;ox<size;ox++)for(var oy=0;oy<size;oy++){
-     if(game.position.get(ox,oy)!==E)continue;
-     var oppRes=game.tryToPlay(ox,oy);
-     if(!oppRes)continue;
-     var oppCap=countStones(result,aiColor)-countStones(oppRes,aiColor);
-     // also count how many of our groups would be in atari after opponent's move
-     var oppAtari=countAtari(oppRes,aiColor);
-     if(oppCap+oppAtari>oppBest)oppBest=oppCap+oppAtari;
-    }
-    game.popPosition();
-    sc-=oppBest*5;
+  var res=game.tryToPlay(x,y);if(!res)continue;
+  if(lv===1&&Math.random()<p.rand){all.push({x:x,y:y,s:Math.random()*35-5});continue}
+  var sc=aiEval(x,y,res,aiC,lv);
+  if(p.look){
+   var oppBest=-Infinity;
+   game.pushPosition(res);
+   for(var ox=0;ox<size;ox++)for(var oy=0;oy<size;oy++){
+    if(game.position.get(ox,oy)!==E)continue;
+    var oppRes=game.tryToPlay(ox,oy);if(!oppRes)continue;
+    var oppSc=aiEval(ox,oy,oppRes,-aiC,2,true);
+    if(oppSc>oppBest)oppBest=oppSc;
    }
-  all.push({x:x,y:y,s:sc});
- }
- if(aiLevel===1){
-  if(all.length&&Math.random()<0.4){
-   var rm=all[Math.floor(Math.random()*all.length)];
-   game.play(rm.x,rm.y);hist.push({x:rm.x,y:rm.y,color:aiColor});
-   passed=false;undoUsed=false;
-   refreshBoard();updateInfo();return;
+   game.popPosition();
+   sc-=oppBest*4;
   }
+  if(lv===1||sc>=0)all.push({x:x,y:y,s:sc});
  }
  if(!all.length){act('pass');return}
  all.sort(function(a,b){return b.s-a.s});
  var best=[];
- for(var i=0;i<all.length;i++)if(all[i].s===all[0].s)best.push(all[i]);else break;
+ if(lv===1){
+  var topN=Math.max(3,Math.ceil(all.length*0.3));
+  for(var i=0;i<topN;i++)best.push(all[i]);
+ }else{
+  for(var i=0;i<all.length;i++){if(all[i].s===all[0].s)best.push(all[i]);else break}
+ }
  var m=best[Math.floor(Math.random()*best.length)];
- game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiColor});
+ game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiC});
  passed=false;undoUsed=false;
  refreshBoard();updateInfo();
 }
