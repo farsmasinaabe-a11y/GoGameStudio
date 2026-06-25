@@ -145,7 +145,31 @@ function loadWGo(cb){
  var s=document.createElement('script');
  s.src='wgo.custom.js';
  s.onload=function(){wgoLoaded=true;wgoLoading=false;wgoCallbacks.forEach(function(f){f()});wgoCallbacks=[]};
- document.head.appendChild(s);
+  document.head.appendChild(s);
+}
+
+var audioCtx=null;
+function playStoneSound(){
+ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+ if(audioCtx.state==='suspended')audioCtx.resume();
+ var t=audioCtx.currentTime,dur=0.08;
+ var gain=audioCtx.createGain();
+ gain.gain.setValueAtTime(0.25,t);
+ gain.gain.exponentialRampToValueAtTime(0.001,t+dur);
+ var buf=audioCtx.createBuffer(1,audioCtx.sampleRate*dur|0,audioCtx.sampleRate);
+ var data=buf.getChannelData(0);
+ for(var i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,3);
+ var src=audioCtx.createBufferSource();
+ src.buffer=buf;
+ src.playbackRate.value=0.35+Math.random()*0.1;
+ var filt=audioCtx.createBiquadFilter();
+ filt.type='lowpass';
+ filt.frequency.value=700+Math.random()*500;
+ src.connect(filt);
+ filt.connect(gain);
+ gain.connect(audioCtx.destination);
+ src.start(t);
+ src.stop(t+dur);
 }
 
 function showScreen(id){
@@ -387,6 +411,7 @@ function aiMove(){
  }
  var m=best[Math.floor(Math.random()*best.length)];
  game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiC});
+ playStoneSound();
  passed=false;undoUsed=false;
  refreshBoard();updateInfo();
 }
@@ -497,13 +522,16 @@ function setupBoardClick(){
   if(!point)return;
   if(mode==='practice'){
    var cur=game.position.get(point.x,point.y);
-   game.setStone(point.x,point.y,cur===E?practiceColor:E);
+   var placing=cur===E;
+   game.setStone(point.x,point.y,placing?practiceColor:E);
+   if(placing)playStoneSound();
    refreshBoard();updateInfo();
    return;
  }
  if(!gameActive||(mode==='ai'&&game.turn!==playerColor))return;
   if(!game.play(point.x,point.y))return;
-  hist.push({x:point.x,y:point.y,color:playerColor});
+   playStoneSound();
+   hist.push({x:point.x,y:point.y,color:playerColor});
   passed=false;undoUsed=false;
   refreshBoard();updateInfo();
   if(mode==='ai')aiTimer=setTimeout(aiMove,200);
