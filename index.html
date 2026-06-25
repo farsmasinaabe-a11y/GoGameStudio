@@ -42,9 +42,9 @@ button:active{background:#444}
 </div>
 
 <div id="menu-go" class="menu-screen" style="display:none">
- <button class="btn-back" onclick="showScreen('menu-main')">&#x2190; Назад</button>
+ <button class="btn-wide" onclick="showScreen('menu-main')" style="margin-bottom:16px">Главное меню</button>
 
- <button class="btn-wide" onclick="startLearn()" style="margin-bottom:16px">&#x1F4DA; Обучение</button>
+ <button class="btn-wide" onclick="startLearn()" style="margin-bottom:16px">&#x1F4DC; Правила</button>
 
  <div style="display:flex;gap:10px;margin-bottom:12px">
   <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
@@ -122,7 +122,7 @@ button:active{background:#444}
  <div id="result" style="display:none;margin:16px">
   <h2 id="resultTitle" style="font-size:22px;margin-bottom:8px"></h2>
   <div id="resultScore" style="font-size:16px;color:#aaa;margin-bottom:16px"></div>
-  <button class="btn-big btn-green" onclick="act('closeGame')">&#x1F3AE; В меню</button>
+  <button class="btn-big btn-green" onclick="act('closeGame')">ОК</button>
  </div>
 </div>
 
@@ -431,9 +431,9 @@ function aiMove(){
     if(oppSc>oppBest)oppBest=oppSc;
    }
    game.popPosition();
-   sc-=oppBest*4;
+   sc-=oppBest*2;
   }
-  if(lv===1||sc>=0)all.push({x:x,y:y,s:sc});
+  if(lv===1||sc>=-10)all.push({x:x,y:y,s:sc});
  }
  if(!all.length){logMove('ИИ','pass','');act('pass');return}
  all.sort(function(a,b){return b.s-a.s});
@@ -539,7 +539,7 @@ function act(a){
  document.getElementById('btns').style.display='none';
  document.getElementById('info').style.display='none';
  document.getElementById('practiceBar').style.display='none';
- document.getElementById('resultTitle').textContent='\uD83C\uDFC1 '+w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!';
+ document.getElementById('resultTitle').textContent=w+' \u043f\u043e\u0431\u0435\u0434\u0438\u043b\u0438!';
  document.getElementById('resultScore').textContent='\u26AB '+s[B].toFixed(1)+' : '+(s[W]+komi).toFixed(1)+' \u26AA (\u043a\u043e\u043c\u0438 '+komi+')';
  document.getElementById('result').style.display='block';
 }
@@ -581,7 +581,7 @@ function setupBoardClick(){
 
 function showLearnList(){
  showScreen('screen-learn');
- var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">\u2190 В меню</button>';
+ var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">Вернуться</button>';
  html+='<div style="width:100%;height:75vh;margin-top:8px">';
  html+='<iframe src="https://way-to-go.gitlab.io/ru/" style="width:100%;height:100%;border:none;border-radius:8px"></iframe>';
  html+='</div>';
