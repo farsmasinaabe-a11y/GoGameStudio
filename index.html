@@ -30,6 +30,7 @@ button:active{background:#444}
 .tabs button.active{background:#2a2a4a;color:#fff}
 #practiceBar{display:none;gap:8px;justify-content:center;align-items:center;margin:4px 0}
 #info{font-size:12px;color:#aaa;margin:2px 0;min-height:18px}
+#moveLog{display:none;margin:8px auto;max-width:240px;max-height:130px;overflow-y:auto;text-align:left;font-size:11px;color:#aaa;background:#12122a;border:1px solid #333;border-radius:8px;padding:6px 10px;font-family:monospace;line-height:1.6}
 </style></head>
 <body>
 <script async src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -115,6 +116,7 @@ button:active{background:#444}
   <button id="btnUndo" onclick="act('undo')">&#x21A9; Отмена</button>
   <button class="btn-red" onclick="act('end')">&#x1F3C1; Конец</button>
  </div>
+ <div id="moveLog"></div>
  <div id="result" style="display:none;margin:16px">
   <h2 id="resultTitle" style="font-size:22px;margin-bottom:8px"></h2>
   <div id="resultScore" style="font-size:16px;color:#aaa;margin-bottom:16px"></div>
@@ -136,6 +138,27 @@ var game=null,board=null,size=9,aiLevel=2,mode='ai',practiceColor=B;
 var hist=[],passed=false,undoUsed=false,gameActive=false;
 var stoneObjects=[],aiTimer=0,playerColor=B,komi=6.5,origB=null,origW=null;
 var wgoLoaded=false,wgoLoading=false,wgoCallbacks=[];
+
+var COLS='ABCDEFGHJKLMNOPQRST';
+
+function coordStr(x,y){
+ return COLS[x]+(size-y);
+}
+
+function logMove(who,x,y){
+ var log=document.getElementById('moveLog');
+ var e=document.createElement('div');
+ e.style.whiteSpace='nowrap';
+ var n=log.children.length+1;
+ e.textContent=n+'. '+who+': '+(x==='pass'?'Пас':coordStr(x,y));
+ log.appendChild(e);
+ log.scrollTop=log.scrollHeight;
+}
+
+function popLog(n){
+ var log=document.getElementById('moveLog');
+ for(var i=0;i<n&&log.lastChild;i++)log.removeChild(log.lastChild);
+}
 
 function loadWGo(cb){
  if(wgoLoaded){cb();return}
@@ -295,6 +318,8 @@ function startGame(){
   box.style.display='';
 
  showScreen('game');
+ document.getElementById('moveLog').style.display='block';
+ document.getElementById('moveLog').innerHTML='';
  gameActive=true;
  clearTimeout(aiTimer);
  if(mode==='ai'&&game.turn!==playerColor)aiTimer=setTimeout(aiMove,300);
@@ -412,6 +437,7 @@ function aiMove(){
  var m=best[Math.floor(Math.random()*best.length)];
  game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiC});
  playStoneSound();
+ logMove('ИИ',m.x,m.y);
  passed=false;undoUsed=false;
  refreshBoard();updateInfo();
 }
@@ -458,36 +484,40 @@ function updateInfo(){
 
 function act(a){
  if(a==='pass'){
-  if(passed&&!undoUsed){endGame();return}
-  game.pass();passed=true;undoUsed=false;
-  hist.push(null);
- }else if(a==='undo'){
-  if(!hist.length)return;
-  var last=hist.pop();game.popPosition();
-  if(mode==='ai'&&last&&last.color===-playerColor&&hist.length){
-   hist.pop();game.popPosition();
-  }
-  passed=false;undoUsed=true;
-  refreshBoard();
- }else if(a==='clear'){
-  if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
-  stoneObjects=[];
-  initGame(size,aiLevel);
-  refreshBoard();updateInfo();
- }else if(a==='end'){endGame();return}
-  else if(a==='closeGame'){
-   var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
-   if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
-   while(stoneObjects.length)board.removeObject(stoneObjects.pop());
-   if(board.objects)board.objects.length=0;
-   stoneObjects=[];game=null;
-   document.getElementById('boardBox').style.display='none';
-   document.getElementById('result').style.display='none';
-   document.getElementById('btns').style.display='';
-   document.getElementById('info').style.display='';
-   showScreen('menu-go');
-   return;
-  }
+   if(passed&&!undoUsed){endGame();return}
+   game.pass();passed=true;undoUsed=false;
+   hist.push(null);
+   logMove(game.turn===-playerColor?'ИИ':'Вы','pass','');
+  }else if(a==='undo'){
+   if(!hist.length)return;
+   var last=hist.pop();game.popPosition();
+   if(mode==='ai'&&last&&last.color===-playerColor&&hist.length){
+    hist.pop();game.popPosition();
+   }
+   popLog(mode==='ai'?2:1);
+   passed=false;undoUsed=true;
+   refreshBoard();
+  }else if(a==='clear'){
+   if(board){while(stoneObjects.length)board.removeObject(stoneObjects.pop());}
+   stoneObjects=[];
+   initGame(size,aiLevel);
+   document.getElementById('moveLog').innerHTML='';
+   refreshBoard();updateInfo();
+  }else if(a==='end'){endGame();return}
+   else if(a==='closeGame'){
+    var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
+    if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
+    while(stoneObjects.length)board.removeObject(stoneObjects.pop());
+    if(board.objects)board.objects.length=0;
+    stoneObjects=[];game=null;
+    document.getElementById('boardBox').style.display='none';
+    document.getElementById('result').style.display='none';
+    document.getElementById('btns').style.display='';
+    document.getElementById('info').style.display='';
+    document.getElementById('moveLog').style.display='none';
+    showScreen('menu-go');
+    return;
+   }
  updateInfo();
  if(mode==='ai'&&gameActive)aiTimer=setTimeout(aiMove,200);
 }
@@ -524,14 +554,15 @@ function setupBoardClick(){
    var cur=game.position.get(point.x,point.y);
    var placing=cur===E;
    game.setStone(point.x,point.y,placing?practiceColor:E);
-   if(placing)playStoneSound();
-   refreshBoard();updateInfo();
+    if(placing){playStoneSound();logMove(practiceColor===B?'⚫':'⚪',point.x,point.y);}
+    refreshBoard();updateInfo();
    return;
  }
  if(!gameActive||(mode==='ai'&&game.turn!==playerColor))return;
-  if(!game.play(point.x,point.y))return;
-   playStoneSound();
-   hist.push({x:point.x,y:point.y,color:playerColor});
+   if(!game.play(point.x,point.y))return;
+    playStoneSound();
+    logMove('Вы',point.x,point.y);
+    hist.push({x:point.x,y:point.y,color:playerColor});
   passed=false;undoUsed=false;
   refreshBoard();updateInfo();
   if(mode==='ai')aiTimer=setTimeout(aiMove,200);
