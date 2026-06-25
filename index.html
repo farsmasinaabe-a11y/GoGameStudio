@@ -112,7 +112,7 @@ button:active{background:#444}
  </div>
  <div id="boardBox"></div>
  <div id="btns">
-  <button id="btnPass" onclick="act('pass')">&#x23ED; Пас</button>
+  <button id="btnPass" onclick="logMove('Вы','pass','');act('pass')">&#x23ED; Пас</button>
   <button id="btnUndo" onclick="act('undo')">&#x21A9; Отмена</button>
   <button class="btn-red" onclick="act('end')">&#x1F3C1; Конец</button>
  </div>
@@ -425,7 +425,7 @@ function aiMove(){
   }
   if(lv===1||sc>=0)all.push({x:x,y:y,s:sc});
  }
- if(!all.length){act('pass');return}
+ if(!all.length){logMove('ИИ','pass','');act('pass');return}
  all.sort(function(a,b){return b.s-a.s});
  var best=[];
  if(lv===1){
@@ -485,7 +485,6 @@ function updateInfo(){
 function act(a){
   if(a==='pass'){
    if(passed&&!undoUsed){endGame();return}
-   logMove(game.turn===playerColor?'Вы':'ИИ','pass','');
    game.pass();passed=true;undoUsed=false;
    hist.push(null);
   }else if(a==='undo'){
