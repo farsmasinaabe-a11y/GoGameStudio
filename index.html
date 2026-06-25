@@ -483,11 +483,11 @@ function updateInfo(){
 }
 
 function act(a){
- if(a==='pass'){
+  if(a==='pass'){
    if(passed&&!undoUsed){endGame();return}
+   logMove(game.turn===playerColor?'Вы':'ИИ','pass','');
    game.pass();passed=true;undoUsed=false;
    hist.push(null);
-   logMove(game.turn===-playerColor?'ИИ':'Вы','pass','');
   }else if(a==='undo'){
    if(!hist.length)return;
    var last=hist.pop();game.popPosition();
@@ -505,7 +505,7 @@ function act(a){
    refreshBoard();updateInfo();
   }else if(a==='end'){endGame();return}
    else if(a==='closeGame'){
-    var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
+    var s=calcScore(),w=s[B]>s[W]+komi?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
     if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
     while(stoneObjects.length)board.removeObject(stoneObjects.pop());
     if(board.objects)board.objects.length=0;
@@ -524,7 +524,7 @@ function act(a){
 
 function endGame(){
  gameActive=false;clearTimeout(aiTimer);
- var s=calcScore(),w=s[B]>s[W]?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
+ var s=calcScore(),w=s[B]>s[W]+komi?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
  document.getElementById('boardBox').style.display='none';
  document.getElementById('btns').style.display='none';
  document.getElementById('info').style.display='none';
