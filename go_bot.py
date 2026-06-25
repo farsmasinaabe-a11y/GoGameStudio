@@ -4,7 +4,7 @@
 import os, json
 
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, MenuButtonDefault
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 
@@ -18,9 +18,12 @@ def wa(sz=9):
 
 
 async def start(update, _):
+    await update.get_bot().set_chat_menu_button(
+        chat_id=update.effective_chat.id,
+        menu_button=MenuButtonDefault(),
+    )
     await update.message.reply_text(
-        "🀄️ <b>Го 9×9</b>\nТы ⚫ чёрные, ИИ ⚪ белые",
-        parse_mode=ParseMode.HTML,
+        "Нажми кнопку ниже ⬇️",
         reply_markup=InlineKeyboardMarkup([[
             InlineKeyboardButton("🎮 Играть", web_app=wa(9)),
         ]]),
@@ -28,8 +31,12 @@ async def start(update, _):
 
 
 async def newgame(update, _):
+    await update.get_bot().set_chat_menu_button(
+        chat_id=update.effective_chat.id,
+        menu_button=MenuButtonDefault(),
+    )
     await update.message.reply_text(
-        "Го 9×9 • ты ⚫ чёрные, ИИ ⚪ белые",
+        "Нажми кнопку ниже ⬇️",
         reply_markup=InlineKeyboardMarkup([[
             InlineKeyboardButton("🎮 Играть", web_app=wa(9)),
         ]]),
