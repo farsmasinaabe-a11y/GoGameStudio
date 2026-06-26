@@ -469,6 +469,11 @@ function aiMove(){
   for(var x=0;x<size;x++)for(var y=0;y<size;y++){
    if(game.position.get(x,y)!==E)continue;
    var res=game.tryToPlay(x,y);if(!res)continue;
+   if(lv>=2){
+    var capBefore=countStones(game.position,-aiC);
+    var capAfter=countStones(res,-aiC);
+    if(capAfter===capBefore&&isSelfAtari(x,y,res,aiC))continue;
+   }
    var sc=aiEval(x,y,res,aiC,lv);
    if(p.look){
     var oppBest=-Infinity;
