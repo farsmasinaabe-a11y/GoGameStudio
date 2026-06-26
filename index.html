@@ -258,10 +258,13 @@ function refreshBoard(){
  stoneObjects=newStones;
 }
 
-function startLearn(){showLearnList();}
+function startLearn(){
+ var url='https://way-to-go.gitlab.io/ru/';
+ if(tg)tg.openLink(url);else window.open(url,'_blank');
+}
 
 function startGame(){
- if(mode==='learn'){showLearnList();return;}
+ if(mode==='learn')return;
  loadWGo(function(){
  var sz=parseInt(document.getElementById('sizeSel').value);
  var lv=parseInt(document.getElementById('levelSel').value);
@@ -358,8 +361,8 @@ function posBonus(x,y){
 }
 
 var AI={1:{rand:0.7,capW:5,atariW:-10,terrW:0,posW:0,look:false},
-        2:{rand:0,capW:12,atariW:-50,terrW:0.3,posW:1,look:false},
-        3:{rand:0,capW:15,atariW:-60,terrW:0.8,posW:2,look:true}};
+       2:{rand:0,capW:13,atariW:-50,terrW:0.45,posW:1,look:false},
+       3:{rand:0,capW:17,atariW:-60,terrW:1.0,posW:2,look:true}};
 
 function terrScore(pos,color){
  var opp=-color,sc=0;
@@ -384,6 +387,24 @@ function aiEval(x,y,pos,color,lv,fast){
  if(p.posW>0)sc+=posBonus(x,y)*p.posW;
  if(!fast&&p.terrW>0){sc+=terrScore(pos,color)*p.terrW;sc-=terrScore(pos,opp)*p.terrW*0.5;}
  return sc;
+}
+
+function isSelfAtari(x,y,pos,color){
+ var visited={},liberties=0,stack=[[x,y]];
+ while(stack.length){
+  var p=stack.pop(),key=p[0]+','+p[1];
+  if(visited[key])continue;
+  visited[key]=true;
+  for(var d=0;d<4;d++){
+   var nx=p[0]+(d===0?-1:d===1?1:0);
+   var ny=p[1]+(d===2?-1:d===3?1:0);
+   if(nx<0||nx>=pos.size||ny<0||ny>=pos.size)continue;
+   var v=pos.get(nx,ny);
+   if(v===E)liberties++;
+   else if(v===color&&!visited[nx+','+ny])stack.push([nx,ny]);
+  }
+ }
+ return liberties===1;
 }
 
 function countAtari(pos,color){
@@ -420,6 +441,11 @@ function aiMove(){
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   if(game.position.get(x,y)!==E)continue;
   var res=game.tryToPlay(x,y);if(!res)continue;
+  if(lv>=2){
+   var capBefore=countStones(game.position,-aiC);
+   var capAfter=countStones(res,-aiC);
+   if(capAfter===capBefore&&isSelfAtari(x,y,res,aiC))continue;
+  }
   if(lv===1&&Math.random()<p.rand){all.push({x:x,y:y,s:Math.random()*35-5});continue}
   var sc=aiEval(x,y,res,aiC,lv);
   if(p.look){
@@ -438,6 +464,29 @@ function aiMove(){
     sc-=oppBest;
    }
   if(lv===1||sc>=-10)all.push({x:x,y:y,s:sc});
+ }
+ if(!all.length){
+  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
+   if(game.position.get(x,y)!==E)continue;
+   var res=game.tryToPlay(x,y);if(!res)continue;
+   var sc=aiEval(x,y,res,aiC,lv);
+   if(p.look){
+    var oppBest=-Infinity;
+    var aiBefore=countStones(res,aiC);
+    game.pushPosition(res);
+    for(var ox=0;ox<size;ox++)for(var oy=0;oy<size;oy++){
+     if(game.position.get(ox,oy)!==E)continue;
+     var oppRes=game.tryToPlay(ox,oy);if(!oppRes)continue;
+     var aiLost=aiBefore-countStones(oppRes,aiC);
+     var atariDiff=countAtari(oppRes,aiC)-countAtari(res,aiC);
+     var oppThreat=aiLost*15+atariDiff*40;
+     if(oppThreat>oppBest)oppBest=oppThreat;
+    }
+    game.popPosition();
+    sc-=oppBest;
+   }
+   all.push({x:x,y:y,s:sc});
+  }
  }
  if(!all.length){logMove('ИИ','pass','');act('pass');return}
  all.sort(function(a,b){return b.s-a.s});
@@ -585,12 +634,5 @@ function setupBoardClick(){
  });
 }
 
-function showLearnList(){
- showScreen('screen-learn');
- var html='<button class="btn-back" onclick="showScreen(\'menu-go\')" style="position:static;margin-bottom:12px">Вернуться</button>';
- html+='<div style="width:100%;height:75vh;margin-top:8px">';
- html+='<iframe src="https://way-to-go.gitlab.io/ru/" style="width:100%;height:100%;border:none;border-radius:8px"></iframe>';
- html+='</div>';
- document.getElementById('learnContent').innerHTML=html;
-}
+
 </script></body></html>
