@@ -40,69 +40,71 @@ button:active{background:#444}
 </div>
 
 <div id="menu-go" class="menu-screen" style="display:none">
- <div style="display:flex;gap:10px;margin-bottom:12px">
-  <button class="btn-wide" onclick="showScreen('menu-main')" style="margin-bottom:0">Главное меню</button>
-  <button class="btn-wide" onclick="startLearn()" style="margin-bottom:0">&#x1F4DC; Правила</button>
- </div>
-
- <div style="display:flex;gap:10px;margin-bottom:12px">
-  <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
-   <div style="font-size:14px;color:#aaa;margin-bottom:10px">&#x26AB; Доска</div>
-   <label>Размер</label>
-   <select id="sizeSel">
-    <option value="9" selected>9&#xD7;9</option>
-    <option value="13">13&#xD7;13</option>
-    <option value="19">19&#xD7;19</option>
-   </select>
-   <label>Стиль</label>
-   <select id="boardStyle">
-    <option value="wood" selected>Дуб</option>
-    <option value="bamboo">Бамбук</option>
-   </select>
-   <label>Подписи</label>
-   <select id="coordStyle">
-    <option value="1" selected>Да</option>
-    <option value="0">Нет</option>
-   </select>
-   <label>Камни</label>
-   <select id="stoneStyle">
-    <option value="glass" selected>Глянцевые</option>
-    <option value="matte">Матовые</option>
-   </select>
+ <div style="width:100%;max-width:440px">
+  <div style="display:flex;gap:10px;margin-bottom:12px">
+   <button class="btn-wide" onclick="showScreen('menu-main')" style="margin-bottom:0">Главное меню</button>
+   <button class="btn-wide" onclick="startLearn()" style="margin-bottom:0">&#x1F4DC; Правила</button>
   </div>
 
-  <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
-   <div style="font-size:14px;color:#aaa;margin-bottom:10px">&#x1F3AE; Игра</div>
-   <label>Режим</label>
-   <select id="modeSel" onchange="switchGoMode(this.value)" style="margin-bottom:8px">
-    <option value="ai" selected>ИИ</option>
-    <option value="twoplayer">Вдвоём</option>
-    <option value="practice">Практика</option>
-    <option disabled>PvP (скоро)</option>
-   </select>
-   <div id="aiSettings">
-    <label>Сложность</label>
-    <select id="levelSel">
-     <option value="1">Новичок</option>
-     <option value="2" selected>Опытный</option>
-     <option value="3">Эксперт</option>
+  <div style="display:flex;gap:10px;margin-bottom:12px">
+   <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
+    <div style="font-size:14px;color:#aaa;margin-bottom:10px">&#x26AB; Доска</div>
+    <label>Размер</label>
+    <select id="sizeSel">
+     <option value="9" selected>9&#xD7;9</option>
+     <option value="13">13&#xD7;13</option>
+     <option value="19">19&#xD7;19</option>
     </select>
-    <label>Цвет</label>
-    <select id="colorSel">
-     <option value="1" selected>Чёрные</option>
-     <option value="-1">Белые</option>
+    <label>Стиль</label>
+    <select id="boardStyle">
+     <option value="wood" selected>Дуб</option>
+     <option value="bamboo">Бамбук</option>
     </select>
-    <label>Подсчёт</label>
-    <select id="rulesSel">
-     <option value="japanese" selected>Японский</option>
-     <option value="chinese">Китайский</option>
-     <option value="free">Свободный</option>
+    <label>Подписи</label>
+    <select id="coordStyle">
+     <option value="1" selected>Да</option>
+     <option value="0">Нет</option>
+    </select>
+    <label>Камни</label>
+    <select id="stoneStyle">
+     <option value="glass" selected>Глянцевые</option>
+     <option value="matte">Матовые</option>
     </select>
    </div>
-  </div>
- </div>
 
- <button class="btn-big btn-green" onclick="startGame()">Старт</button>
+   <div style="flex:1;min-width:0;background:#1e1e3a;border:1px solid #333;border-radius:10px;padding:12px;text-align:left">
+    <div style="font-size:14px;color:#aaa;margin-bottom:10px">&#x1F3AE; Игра</div>
+    <label>Режим</label>
+    <select id="modeSel" onchange="switchGoMode(this.value)" style="margin-bottom:8px">
+     <option value="ai" selected>ИИ</option>
+     <option value="twoplayer">Вдвоём</option>
+     <option value="practice">Практика</option>
+     <option disabled>PvP (скоро)</option>
+    </select>
+    <div id="aiSettings">
+     <label>Сложность</label>
+     <select id="levelSel">
+      <option value="1">Новичок</option>
+      <option value="2" selected>Опытный</option>
+      <option value="3">Эксперт</option>
+     </select>
+     <label>Цвет</label>
+     <select id="colorSel">
+      <option value="1" selected>Чёрные</option>
+      <option value="-1">Белые</option>
+     </select>
+     <label>Подсчёт</label>
+     <select id="rulesSel">
+      <option value="japanese" selected>Японский</option>
+      <option value="chinese">Китайский</option>
+      <option value="free">Свободный</option>
+     </select>
+    </div>
+   </div>
+  </div>
+
+  <button class="btn-big btn-green" onclick="startGame()">Старт</button>
+ </div>
 </div>
 
 <div id="game">
