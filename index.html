@@ -7,6 +7,8 @@
 body{background:#1a1a2e;color:#eee;font-family:system-ui;text-align:center;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:8px;user-select:none}
 #game{display:none;flex-direction:column;align-items:center}
 #boardBox{display:inline-block}
+.board-3d{perspective:600px;margin:12px 0}
+.board-3d svg{transform:rotateX(6deg) rotateY(-3deg);box-shadow:6px 12px 20px rgba(0,0,0,0.55);border-radius:4px}
 #btns{display:flex;gap:6px;margin:6px 0;flex-wrap:wrap;justify-content:center}
 button{background:#2a2a4a;color:#ddd;border:1px solid #444;padding:8px 14px;border-radius:8px;font-size:14px;cursor:pointer;min-width:48px;transition:background .15s}
 button:active{background:#444}
@@ -60,10 +62,11 @@ button:active{background:#444}
      <option value="19">19&#xD7;19</option>
     </select>
     <label>Стиль</label>
-    <select id="boardStyle">
-     <option value="wood" selected>Дуб</option>
-     <option value="bamboo">Бамбук</option>
-    </select>
+     <select id="boardStyle">
+      <option value="wood" selected>Дуб</option>
+      <option value="bamboo">Бамбук</option>
+      <option value="3d">3D</option>
+     </select>
     <label>Подписи</label>
     <select id="coordStyle">
      <option value="1" selected>Да</option>
@@ -311,17 +314,19 @@ function startGame(){
  var box=document.getElementById('boardBox');
   var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.6,600);
   var boardW=maxW-(co?22:0);
+  var woodBg='repeating-linear-gradient(90deg,rgba(0,0,0,0) 0px,rgba(0,0,0,.02) 1px,rgba(0,0,0,0) 2px,rgba(0,0,0,.05) 3px,rgba(0,0,0,0) 5px,rgba(0,0,0,.03) 8px,rgba(0,0,0,0) 12px,rgba(0,0,0,.04) 16px,rgba(0,0,0,0) 21px,rgba(0,0,0,.02) 25px,rgba(0,0,0,0) 35px,rgba(0,0,0,.06) 40px,rgba(0,0,0,0) 55px,rgba(0,0,0,.03) 60px,rgba(0,0,0,0) 80px)';
 
   var styles={
-  wood:{bg:'#B89543',line:'#5C3A1E',star:'#3A2210',coord:'#3A2210'},
-  bamboo:{bg:'#D4C878',line:'#8B7D4A',star:'#5C4A20',coord:'#5C4A20'}
- }[bs]||{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531'};
+   wood:{bg:'#B89543',line:'#5C3A1E',star:'#3A2210',coord:'#3A2210',bgImg:woodBg},
+   bamboo:{bg:'#D4C878',line:'#8B7D4A',star:'#5C4A20',coord:'#5C4A20',bgImg:woodBg},
+   '3d':{bg:'#C4A24B',line:'#5C3A1E',star:'#3A2210',coord:'#3A2210',bgImg:woodBg}
+  }[bs]||{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531',bgImg:''};
 
-  var theme={
-   backgroundColor:styles.bg,
-   grid:{linesColor:styles.line,starColor:styles.star},
-   coordinates:{color:styles.coord,top:co,left:co,right:co,bottom:co}
-  };
+   var theme={
+    backgroundColor:styles.bg,
+    grid:{linesColor:styles.line,starColor:styles.star},
+    coordinates:{color:styles.coord,top:co,left:co,right:co,bottom:co}
+   };
   if(ss==='matte'){
    theme.drawHandlers={B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()};
   }
@@ -338,8 +343,8 @@ function startGame(){
     board.setSize(size);
     board.config.width=boardW;
     var t=board.config.theme;
-   t.backgroundColor=styles.bg;
-   if(t.grid){t.grid.linesColor=styles.line;t.grid.starColor=styles.star;}
+    t.backgroundColor=styles.bg;
+    if(t.grid){t.grid.linesColor=styles.line;t.grid.starColor=styles.star;}
    if(t.coordinates){
     t.coordinates.color=styles.coord;
     t.coordinates.top=co;t.coordinates.left=co;
@@ -356,8 +361,11 @@ function startGame(){
     reverseCoords();
    }
    box.style.display='';
+   box.classList.toggle('board-3d',bs==='3d');
+   var svgEl=board.element.querySelector('svg');
+   if(svgEl)svgEl.style.backgroundImage=styles.bgImg||'';
 
- showScreen('game');
+  showScreen('game');
  document.getElementById('moveLog').style.display='block';
  document.getElementById('moveLog').innerHTML='';
  gameActive=true;
