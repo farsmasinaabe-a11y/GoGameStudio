@@ -309,9 +309,10 @@ function startGame(){
  initGame(sz,lv);
 
  var box=document.getElementById('boardBox');
- var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.6,600);
+  var maxW=Math.min(window.innerWidth*0.92,window.innerHeight*0.6,600);
+  var boardW=maxW-(co?22:0);
 
- var styles={
+  var styles={
   wood:{bg:'#B89543',line:'#5C3A1E',star:'#3A2210',coord:'#3A2210'},
   bamboo:{bg:'#D4C878',line:'#8B7D4A',star:'#5C4A20',coord:'#5C4A20'}
  }[bs]||{bg:'#CEB053',line:'#654525',star:'#531',coord:'#531'};
@@ -327,15 +328,16 @@ function startGame(){
 
   if(!board){
    box.innerHTML='';
-   board=new WGo.SVGBoard(box,{size:size,width:maxW,theme:theme,coordinates:co});
+    board=new WGo.SVGBoard(box,{size:size,width:boardW,theme:theme,coordinates:co});
    // save original glass handlers
    if(!origB)origB=board.config.theme.drawHandlers.B;
    if(!origW)origW=board.config.theme.drawHandlers.W;
     setupBoardClick();
     reverseCoords();
    }else{
-   board.setSize(size);
-   var t=board.config.theme;
+    board.setSize(size);
+    board.config.width=boardW;
+    var t=board.config.theme;
    t.backgroundColor=styles.bg;
    if(t.grid){t.grid.linesColor=styles.line;t.grid.starColor=styles.star;}
    if(t.coordinates){
@@ -360,8 +362,9 @@ function startGame(){
  document.getElementById('moveLog').innerHTML='';
  gameActive=true;
  clearTimeout(aiTimer);
- if(mode==='ai'&&game.turn!==playerColor)aiTimer=setTimeout(aiMove,300);
- document.getElementById('result').style.display='none';
+  if(mode==='ai'&&game.turn!==playerColor)aiTimer=setTimeout(aiMove,300);
+  else if(mode==='ai')showPlayerThinking();
+  document.getElementById('result').style.display='none';
  document.getElementById('btns').style.display='';
  document.getElementById('info').style.display='';
  document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
@@ -461,7 +464,13 @@ function countAtari(pos,color){
 function aiMove(){
  if(!gameActive||mode!=='ai'||game.turn!==-playerColor)return;
  var aiC=-playerColor,lv=aiLevel,p=AI[lv]||AI[2];
- document.getElementById('info').textContent+='  |  \u0418\u0418 \u0434\u0443\u043c\u0430\u0435\u0442...';
+ var thinkEl=document.createElement('div');
+ thinkEl.id='ai-thinking';
+ thinkEl.style.cssText='white-space:nowrap;color:#f90;font-style:italic';
+ thinkEl.textContent='\u0418\u0418 \u0434\u0443\u043c\u0430\u0435\u0442\u2026';
+ var moveLog=document.getElementById('moveLog');
+ moveLog.appendChild(thinkEl);
+ moveLog.scrollTop=moveLog.scrollHeight;
  var all=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
   if(game.position.get(x,y)!==E)continue;
@@ -518,7 +527,10 @@ function aiMove(){
    all.push({x:x,y:y,s:sc});
   }
  }
- if(!all.length){logMove('ИИ','pass','');act('pass');return}
+ if(!all.length){
+  var te=document.getElementById('ai-thinking');
+  if(te)te.remove();
+  logMove('ИИ','pass','');act('pass');return}
  all.sort(function(a,b){return b.s-a.s});
  var best=[];
  if(lv===1){
@@ -527,12 +539,28 @@ function aiMove(){
  }else{
   for(var i=0;i<all.length;i++){if(all[i].s===all[0].s)best.push(all[i]);else break}
  }
- var m=best[Math.floor(Math.random()*best.length)];
- game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiC});
- playStoneSound();
- logMove('ИИ',m.x,m.y);
- passed=false;undoUsed=false;
- refreshBoard();updateInfo();
+  var m=best[Math.floor(Math.random()*best.length)];
+  game.play(m.x,m.y);hist.push({x:m.x,y:m.y,color:aiC});
+  playStoneSound();
+  var te=document.getElementById('ai-thinking');
+  if(te)te.remove();
+  logMove('ИИ',m.x,m.y);
+  passed=false;undoUsed=false;
+  refreshBoard();updateInfo();
+  showPlayerThinking();
+}
+
+function showPlayerThinking(){
+ if(mode!=='ai'||game.turn!==playerColor||!gameActive)return;
+ var log=document.getElementById('moveLog');
+ var prev=document.getElementById('pl-thinking');
+ if(prev)prev.remove();
+ var e=document.createElement('div');
+ e.id='pl-thinking';
+ e.style.cssText='white-space:nowrap;color:#f90;font-style:italic';
+ e.textContent='\u0412\u0430\u0448 \u0445\u043e\u0434\u2026';
+ log.appendChild(e);
+ log.scrollTop=log.scrollHeight;
 }
 
 function flod(r,c){
@@ -649,6 +677,8 @@ function act(a){
 
   function endGame(){
   gameActive=false;clearTimeout(aiTimer);
+  var te=document.getElementById('ai-thinking');if(te)te.remove();
+  var tp=document.getElementById('pl-thinking');if(tp)tp.remove();
   var s=calcScore(),w=s[B]>s[W]+komi?'\u0427\u0451\u0440\u043d\u044b\u0435':'\u0411\u0435\u043b\u044b\u0435';
   var log=document.getElementById('moveLog');
   var rLog=document.getElementById('resultMoveLog');
@@ -691,10 +721,11 @@ function setupBoardClick(){
     refreshBoard();updateInfo();
    return;
  }
- if(!gameActive||(mode==='ai'&&game.turn!==playerColor))return;
-   if(!game.play(point.x,point.y))return;
-    playStoneSound();
-    logMove('Вы',point.x,point.y);
+  if(!gameActive||(mode==='ai'&&game.turn!==playerColor))return;
+    if(!game.play(point.x,point.y))return;
+     playStoneSound();
+     var te=document.getElementById('pl-thinking');if(te)te.remove();
+     logMove('Вы',point.x,point.y);
     hist.push({x:point.x,y:point.y,color:playerColor});
   passed=false;undoUsed=false;
   refreshBoard();updateInfo();
