@@ -13,6 +13,7 @@ button:active{background:#444}
 .btn-big{padding:12px 32px;font-size:18px;margin-top:12px}
 .btn-red{background:#5a2020;border-color:#733}
 .btn-green{background:#2a5a2a;border-color:#3a3}
+.btn-orange{background:#5a3a1a;border-color:#a64}
 .btn-wide{display:block;width:100%;box-sizing:border-box;margin-bottom:16px}
 .btn-back{background:#2a2a4a;border-color:#444;font-size:13px;padding:6px 12px;margin-bottom:8px}
 .btn-sm{padding:6px 10px;font-size:12px;min-width:36px;border-radius:6px}
@@ -29,6 +30,9 @@ button:active{background:#444}
 #practiceBar{display:none;gap:8px;justify-content:center;align-items:center;margin:4px 0}
 #info{font-size:12px;color:#aaa;margin:2px 0;min-height:18px}
 #moveLog{display:none;margin:8px 0;align-self:stretch;max-height:80px;overflow-y:auto;text-align:left;font-size:11px;color:#aaa;background:#12122a;border:1px solid #333;border-radius:8px;padding:6px 10px;font-family:monospace;line-height:1.4}
+.log-last{color:#e44;font-weight:bold}
+.log-cancelled{color:#844;text-decoration:line-through}
+.log-undo{color:#f90;font-style:italic}
 </style></head>
 <body>
 <script async src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -117,14 +121,15 @@ button:active{background:#444}
  </div>
  <div id="boardBox"></div>
  <div id="btns">
-  <button id="btnPass" onclick="logMove('Вы','pass','');act('pass')">&#x23ED; Пас</button>
-  <button id="btnUndo" onclick="act('undo')">&#x21A9; Отмена</button>
-  <button class="btn-red" onclick="act('end')">&#x1F3C1; Конец</button>
+  <button id="btnPass" onclick="logMove('Вы','pass','');act('pass')">Пас</button>
+  <button id="btnUndo" onclick="act('undo')">Отменить ход</button>
+  <button class="btn-red" onclick="act('end')">Завершить</button>
  </div>
  <div id="moveLog"></div>
  <div id="result" style="display:none;margin:16px">
   <h2 id="resultTitle" style="font-size:22px;margin-bottom:8px"></h2>
   <div id="resultScore" style="font-size:16px;color:#aaa;margin-bottom:16px"></div>
+  <button class="btn-big btn-orange" onclick="act('repeat')" style="margin-bottom:8px">Повторить</button>
   <button class="btn-big btn-green" onclick="act('closeGame')">ОК</button>
  </div>
 </div>
@@ -153,17 +158,33 @@ function coordStr(x,y){
 
 function logMove(who,x,y){
  var log=document.getElementById('moveLog');
+ var prev=log.querySelector('.log-last');
+ if(prev)prev.classList.remove('log-last');
  var e=document.createElement('div');
  e.style.whiteSpace='nowrap';
+ e.className='log-last';
  var n=log.children.length+1;
  e.textContent=n+'. '+who+': '+(x==='pass'?'Пас':coordStr(x,y));
  log.appendChild(e);
  log.scrollTop=log.scrollHeight;
 }
 
-function popLog(n){
+function undoLog(n,rx,ry){
  var log=document.getElementById('moveLog');
- for(var i=0;i<n&&log.lastChild;i++)log.removeChild(log.lastChild);
+ var all=log.children,cnt=0;
+ for(var i=all.length-1;i>=0&&cnt<n;i--){
+  if(!all[i].classList.contains('log-cancelled')&&!all[i].classList.contains('log-undo')){
+   all[i].classList.add('log-cancelled');
+   all[i].classList.remove('log-last');
+   cnt++;
+  }
+ }
+ var e=document.createElement('div');
+ e.style.whiteSpace='nowrap';
+ e.className='log-undo';
+ e.textContent=rx<0?'\u21A9 \u0412\u043e\u0437\u0432\u0440\u0430\u0442 \u043a \u043d\u0430\u0447\u0430\u043b\u0443':'\u21A9 \u0412\u043e\u0437\u0432\u0440\u0430\u0442 \u043a '+coordStr(rx,ry);
+ log.appendChild(e);
+ log.scrollTop=log.scrollHeight;
 }
 
 function loadWGo(cb){
@@ -243,6 +264,7 @@ function initGame(sz,level,rules){
 function refreshBoard(){
  if(!board)return;
  board.redraw();
+ reverseCoords();
  var pos=game.position;
  var newStones=[];
  for(var x=0;x<size;x++)for(var y=0;y<size;y++){
@@ -296,7 +318,7 @@ function startGame(){
   var theme={
    backgroundColor:styles.bg,
    grid:{linesColor:styles.line,starColor:styles.star},
-   coordinates:{color:styles.coord,top:co,left:co,right:false,bottom:false}
+   coordinates:{color:styles.coord,top:co,left:co,right:co,bottom:co}
   };
   if(ss==='matte'){
    theme.drawHandlers={B:new WGo.MatteStoneBlack(),W:new WGo.MatteStoneWhite()};
@@ -308,8 +330,9 @@ function startGame(){
    // save original glass handlers
    if(!origB)origB=board.config.theme.drawHandlers.B;
    if(!origW)origW=board.config.theme.drawHandlers.W;
-   setupBoardClick();
-  }else{
+    setupBoardClick();
+    reverseCoords();
+   }else{
    board.setSize(size);
    var t=board.config.theme;
    t.backgroundColor=styles.bg;
@@ -317,7 +340,7 @@ function startGame(){
    if(t.coordinates){
     t.coordinates.color=styles.coord;
     t.coordinates.top=co;t.coordinates.left=co;
-    t.coordinates.right=false;t.coordinates.bottom=false;
+    t.coordinates.right=co;t.coordinates.bottom=co;
    }
    if(ss==='matte'){
     t.drawHandlers.B=new WGo.MatteStoneBlack();
@@ -326,9 +349,10 @@ function startGame(){
     if(origB)t.drawHandlers.B=origB;
     if(origW)t.drawHandlers.W=origW;
    }
-   board.redraw();
-  }
-  box.style.display='';
+    board.redraw();
+    reverseCoords();
+   }
+   box.style.display='';
 
  showScreen('game');
  document.getElementById('moveLog').style.display='block';
@@ -560,10 +584,17 @@ function act(a){
   }else if(a==='undo'){
    if(!hist.length)return;
    var last=hist.pop();game.popPosition();
+   var n=1;
    if(mode==='ai'&&last&&last.color===-playerColor&&hist.length){
     hist.pop();game.popPosition();
+    n=2;
    }
-   popLog(mode==='ai'?2:1);
+   var rx=-1,ry=-1;
+   if(hist.length){
+    var prev=hist[hist.length-1];
+    if(prev){rx=prev.x;ry=prev.y;}
+   }
+   undoLog(n,rx,ry);
    passed=false;undoUsed=true;
    refreshBoard();
   }else if(a==='clear'){
@@ -573,9 +604,31 @@ function act(a){
    document.getElementById('moveLog').innerHTML='';
    refreshBoard();updateInfo();
   }else if(a==='end'){endGame();return}
-   else if(a==='closeGame'){
-    var s=calcScore(),w=s[B]>s[W]+komi?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
-    if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
+   else if(a==='repeat'){
+    document.getElementById('result').style.display='none';
+    document.getElementById('boardBox').style.display='';
+    document.getElementById('btns').style.display='';
+    document.getElementById('info').style.display='';
+    document.getElementById('moveLog').style.display='block';
+    document.getElementById('moveLog').innerHTML='';
+    initGame(size,aiLevel);
+    if(board){
+     while(stoneObjects.length)board.removeObject(stoneObjects.pop());
+     if(board.objects)board.objects.length=0;
+    }
+    stoneObjects=[];
+    refreshBoard();
+    reverseCoords();
+    updateInfo();
+    gameActive=true;
+    clearTimeout(aiTimer);
+    document.getElementById('practiceBar').style.display=(mode==='practice'?'flex':'none');
+    document.getElementById('btnPass').style.display=(mode==='practice'?'none':'inline');
+    document.getElementById('btnUndo').style.display=(mode==='practice'?'none':'inline');
+    if(mode==='ai'&&game.turn!==playerColor)aiTimer=setTimeout(aiMove,300);
+   }else if(a==='closeGame'){
+     var s=calcScore(),w=s[B]>s[W]+komi?'\u0427\u0451\u0440\u043d\u044b\u0435':'\u0411\u0435\u043b\u044b\u0435';
+     if(tg)tg.sendData(JSON.stringify({score:{black:s[B],white:s[W]},winner:w,size:size,moves:hist.filter(Boolean).length}));
     while(stoneObjects.length)board.removeObject(stoneObjects.pop());
     if(board.objects)board.objects.length=0;
     stoneObjects=[];game=null;
@@ -594,7 +647,7 @@ function act(a){
  function endGame(){
  gameActive=false;clearTimeout(aiTimer);
  document.getElementById('moveLog').style.display='none';
- var s=calcScore(),w=s[B]>s[W]+komi?'\u26AB \u0427\u0451\u0440\u043d\u044b\u0435':'\u26AA \u0411\u0435\u043b\u044b\u0435';
+  var s=calcScore(),w=s[B]>s[W]+komi?'\u0427\u0451\u0440\u043d\u044b\u0435':'\u0411\u0435\u043b\u044b\u0435';
  document.getElementById('boardBox').style.display='none';
  document.getElementById('btns').style.display='none';
  document.getElementById('info').style.display='none';
@@ -643,6 +696,17 @@ function showLearnList(){
  showScreen('screen-learn');
  var html='<iframe src="https://way-to-go.gitlab.io/ru/" style="width:100%;height:100%;border:none"></iframe>';
  document.getElementById('learnContent').innerHTML=html;
+}
+
+function reverseCoords(){
+ if(!board||!board.element)return;
+ try{
+  var texts=board.element.querySelectorAll('text');
+  texts.forEach(function(t){
+   var val=parseInt(t.textContent);
+   if(!isNaN(val)&&val>=1&&val<=size)t.textContent=size+1-val;
+  });
+ }catch(e){}
 }
 
 </script></body></html>
